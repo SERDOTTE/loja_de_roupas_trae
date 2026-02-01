@@ -2,20 +2,15 @@
 
 import { Fornecedor } from "@/types/db";
 import { useState } from "react";
-import { getSupabaseClient } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 
 export function SupplierForm({ onCreated }: { onCreated?: () => void }) {
-  const supabase = getSupabaseClient();
   const [form, setForm] = useState({ nome: "", cpf_cnpj: "", telefone: "", email: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!supabase) {
-      setError("Supabase não configurado. Defina NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY.");
-      return;
-    }
     setLoading(true);
     setError(null);
     const { nome, cpf_cnpj, telefone, email } = form;

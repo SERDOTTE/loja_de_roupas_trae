@@ -1,11 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getSupabaseClient } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 import { Fornecedor, Produto } from "@/types/db";
 
 export function SalesForm({ onCreated }: { onCreated?: () => void }) {
-  const supabase = getSupabaseClient();
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [selectedFornecedor, setSelectedFornecedor] = useState("");
@@ -19,15 +18,14 @@ export function SalesForm({ onCreated }: { onCreated?: () => void }) {
   });
 
   useEffect(() => {
-    if (!supabase) return;
     (async () => {
       const { data: fData } = await supabase.from("fornecedores").select("*").order("nome");
       setFornecedores(fData || []);
     })();
-  }, [supabase]);
+  }, []);
 
   useEffect(() => {
-    if (!supabase || !selectedFornecedor) {
+    if (!selectedFornecedor) {
       setProdutos([]);
       return;
     }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getSupabaseClient } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 import { Fornecedor } from "@/types/db";
 
 interface SaleData {
@@ -15,14 +15,11 @@ interface SaleData {
 }
 
 export function SalesListModal({ onClose }: { onClose: () => void }) {
-  const supabase = getSupabaseClient();
   const [vendas, setVendas] = useState<SaleData[]>([]);
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!supabase) return;
-
     (async () => {
       const currentMonthStart = new Date();
       currentMonthStart.setDate(1);

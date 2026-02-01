@@ -1,11 +1,10 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { getSupabaseClient } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 import { Produto, Fornecedor } from "@/types/db";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 function ProductForm({ fornecedores, onCreated }: { fornecedores: Fornecedor[]; onCreated?: () => void }) {
-  const supabase = getSupabaseClient();
   const [form, setForm] = useState({
     fornecedor_id: "",
     produto: "",
@@ -21,10 +20,6 @@ function ProductForm({ fornecedores, onCreated }: { fornecedores: Fornecedor[]; 
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!supabase) {
-      setError("Supabase não configurado. Defina NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY.");
-      return;
-    }
     setLoading(true);
     setError(null);
 
@@ -164,7 +159,6 @@ function ProductForm({ fornecedores, onCreated }: { fornecedores: Fornecedor[]; 
 }
 
 export default function ProdutosPage() {
-  const supabase = getSupabaseClient();
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -173,10 +167,9 @@ export default function ProdutosPage() {
   const [editLoading, setEditLoading] = useState(false);
 
   const handleProductCreated = useCallback(async () => {
-    if (!supabase) return;
     const { data: pData } = await supabase.from("produtos").select("*").order("data_entrada", { ascending: false });
     setProdutos(pData || []);
-  }, [supabase]);
+  }, []);
 
   const handleEditProduct = (produto: Produto) => {
     setEditingProduct(produto);
@@ -189,7 +182,7 @@ export default function ProdutosPage() {
 
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!supabase || !editingProduct) return;
+    if (!editingProduct) return;
 
     if (!editForm.valor_venda || !editForm.data_venda || !editForm.data_recebimento) {
       alert("Preencha todos os campos");
@@ -217,11 +210,6 @@ export default function ProdutosPage() {
   };
 
   useEffect(() => {
-    if (!supabase) {
-      setError("Supabase não configurado");
-      return;
-    }
-    
     (async () => {
       try {
         const { data: fData, error: fError } = await supabase.from("fornecedores").select("*").order("created_at", { ascending: false });
@@ -242,7 +230,7 @@ export default function ProdutosPage() {
         setError(`Erro: ${err.message}`);
       }
     })();
-  }, [supabase]);
+  }, []);
 
   return (
     <ProtectedRoute>

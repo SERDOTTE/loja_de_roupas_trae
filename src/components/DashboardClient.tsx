@@ -1,18 +1,16 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { getSupabaseClient } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 import { SalesForm } from "./SalesForm";
 import { SalesListModal } from "./SalesListModal";
 
 export default function DashboardClient() {
-  const supabase = getSupabaseClient();
   const [produtos, setProdutos] = useState<any[]>([]);
   const [showSalesModal, setShowSalesModal] = useState(false);
   const [showSalesListModal, setShowSalesListModal] = useState(false);
   const [currentMonth, setCurrentMonth] = useState<string>("");
 
   const loadProdutos = useCallback(async () => {
-    if (!supabase) return;
     const currentMonthStart = new Date();
     currentMonthStart.setDate(1);
     currentMonthStart.setHours(0, 0, 0, 0);
@@ -35,7 +33,7 @@ export default function DashboardClient() {
     const now = new Date();
     const monthName = now.toLocaleString("pt-BR", { month: "long", year: "numeric" });
     setCurrentMonth(monthName.charAt(0).toUpperCase() + monthName.slice(1));
-  }, [supabase, loadProdutos]);
+  }, [loadProdutos]);
 
   const totals = useMemo(() => {
     const totalVendas = produtos.length;

@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { getSupabaseClient } from "./supabaseClient";
+import { supabase } from "./supabaseClient";
 
 interface AuthContextType {
   user: any;
@@ -12,16 +12,10 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const supabase = getSupabaseClient();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!supabase) {
-      setLoading(false);
-      return;
-    }
-
     // Verificar usuário atual
     (async () => {
       const {

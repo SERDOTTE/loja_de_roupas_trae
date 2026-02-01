@@ -2,11 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getSupabaseClient } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function LoginPage() {
   const router = useRouter();
-  const supabase = getSupabaseClient();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -16,15 +15,10 @@ export default function LoginPage() {
   useEffect(() => {
     console.log("URL Supabase:", process.env.NEXT_PUBLIC_SUPABASE_URL);
     console.log("Key existe:", !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-    console.log("Supabase cliente:", supabase ? "OK" : "NULL");
-  }, [supabase]);
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!supabase) {
-      setError(`Supabase não configurado. URL: ${process.env.NEXT_PUBLIC_SUPABASE_URL || "vazia"}`);
-      return;
-    }
 
     if (!email || !password) {
       setError("Preencha email e senha");

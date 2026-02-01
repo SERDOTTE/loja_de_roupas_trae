@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { getSupabaseClient } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 
 interface VendasMes {
   total_vendas: number;
@@ -11,7 +11,6 @@ interface VendasMes {
 }
 
 export function ConsultasSection() {
-  const supabase = getSupabaseClient();
   const [mes, setMes] = useState<string>(String(new Date().getMonth() + 1).padStart(2, "0"));
   const [ano, setAno] = useState<string>(String(new Date().getFullYear()));
   const [resultado, setResultado] = useState<VendasMes | null>(null);
@@ -20,10 +19,6 @@ export function ConsultasSection() {
 
   const handleConsultar = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!supabase) {
-      setError("Supabase não configurado");
-      return;
-    }
 
     setLoading(true);
     setError(null);

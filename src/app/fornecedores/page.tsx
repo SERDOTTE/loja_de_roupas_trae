@@ -1,20 +1,15 @@
 "use client";
 import { useEffect, useState } from "react";
-import { getSupabaseClient } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 import { Fornecedor } from "@/types/db";
 import { SupplierForm } from "@/components/SupplierForm";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 export default function FornecedoresPage() {
-  const supabase = getSupabaseClient();
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   async function loadFornecedores() {
-    if (!supabase) {
-      setError("Supabase não configurado. Defina NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY.");
-      return;
-    }
     const { data, error } = await supabase.from("fornecedores").select("*").order("created_at", { ascending: false });
     if (error) setError(error.message);
     setFornecedores(data || []);
