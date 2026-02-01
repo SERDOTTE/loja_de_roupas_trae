@@ -2,12 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-
-const supabase = createClientComponentClient()
-
-
-// import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabase.server";
 
 export default function LoginPage() {
   const router = useRouter();
