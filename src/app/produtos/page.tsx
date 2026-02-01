@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabase.server";
 import { Produto, Fornecedor } from "@/types/db";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 

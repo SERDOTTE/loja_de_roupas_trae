@@ -2,7 +2,7 @@
 
 import { Fornecedor } from "@/types/db";
 import { useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabase.server";
 
 export function SupplierForm({ onCreated }: { onCreated?: () => void }) {
   const [form, setForm] = useState({ nome: "", cpf_cnpj: "", telefone: "", email: "" });
