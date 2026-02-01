@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 
@@ -12,10 +12,17 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Log de debug
+  useEffect(() => {
+    console.log("URL Supabase:", process.env.NEXT_PUBLIC_SUPABASE_URL);
+    console.log("Key existe:", !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+    console.log("Supabase cliente:", supabase ? "OK" : "NULL");
+  }, [supabase]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!supabase) {
-      setError("Supabase não configurado");
+      setError(`Supabase não configurado. URL: ${process.env.NEXT_PUBLIC_SUPABASE_URL || "vazia"}`);
       return;
     }
 
