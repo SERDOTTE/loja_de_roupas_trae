@@ -12,3 +12,7 @@ export function getSupabaseClient(): SupabaseClient | null {
   client = createClient(url, key);
   return client;
 }
+
+// Adicione isso antes de criar o cliente do supabase
+console.log("Variável URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
+console.log("Variável KEY:", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? "Cadastrada (OK)" : "Vazia");
