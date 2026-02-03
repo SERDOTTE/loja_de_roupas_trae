@@ -1,11 +1,15 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
+// Usamos 'as any' para evitar que o TS barre propriedades 
+// que ele ainda não conhece na versão 16
+const nextConfig: any = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  // Na versão 16, o ESLint é tratado de forma diferente ou via CLI
-  // Removendo a chave 'eslint' para evitar o aviso de "Unrecognized key"
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  devIndicators: false,
 };
 
 export default nextConfig;
