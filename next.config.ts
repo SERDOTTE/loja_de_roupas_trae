@@ -2,14 +2,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   typescript: {
-    // Ignora erros de TypeScript no build
     ignoreBuildErrors: true,
   },
-  // Se o erro persistir em 'eslint', comente as linhas abaixo
-  // @ts-ignore
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  // Na versão 16, o ESLint é tratado de forma diferente ou via CLI
+  // Removendo a chave 'eslint' para evitar o aviso de "Unrecognized key"
 };
 
 export default nextConfig;
