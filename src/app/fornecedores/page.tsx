@@ -22,40 +22,40 @@ export default function FornecedoresPage() {
 
   return (
     <ProtectedRoute>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Fornecedores</h2>
+          <h2 className="text-lg sm:text-xl font-semibold text-black">Fornecedores</h2>
         </div>
 
-        <div className="rounded-lg border bg-white p-4">
-          <h3 className="text-lg font-medium">Cadastrar fornecedor</h3>
+        <div className="rounded-lg border bg-white p-3 sm:p-4">
+          <h3 className="text-base sm:text-lg font-medium text-black">Cadastrar fornecedor</h3>
           <div className="mt-4">
             <SupplierForm onCreated={loadFornecedores} />
           </div>
         </div>
 
-        <div className="rounded-lg border bg-white">
-          <div className="p-4 border-b">
-            <h3 className="text-lg font-medium">Lista de fornecedores</h3>
+        <div className="rounded-lg border bg-white overflow-x-auto">
+          <div className="p-3 sm:p-4 border-b">
+            <h3 className="text-base sm:text-lg font-medium text-black">Lista de fornecedores</h3>
           </div>
-          <div className="p-4">
-            {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
-            <table className="min-w-full text-sm">
+          <div className="p-3 sm:p-4">
+            {error && <p className="text-xs sm:text-sm text-red-600 mb-3">{error}</p>}
+            <table className="min-w-full text-xs sm:text-sm">
               <thead>
                 <tr className="text-left">
-                  <th className="py-2">Nome</th>
-                  <th className="py-2">CPF/CNPJ</th>
-                  <th className="py-2">Telefone</th>
-                  <th className="py-2">Email</th>
+                  <th className="py-2 text-black">Nome</th>
+                  <th className="py-2 text-black">CPF/CNPJ</th>
+                  <th className="py-2 text-black">Telefone</th>
+                  <th className="py-2 text-black">Email</th>
                 </tr>
               </thead>
               <tbody>
                 {fornecedores.map((f) => (
                   <tr key={f.id} className="border-t">
-                    <td className="py-2">{f.nome}</td>
-                    <td className="py-2">{f.cpf_cnpj}</td>
-                    <td className="py-2">{f.telefone}</td>
-                    <td className="py-2">{f.email}</td>
+                    <td className="py-2 text-black">{f.nome}</td>
+                    <td className="py-2 text-black">{f.cpf_cnpj}</td>
+                    <td className="py-2 text-black">{f.telefone}</td>
+                    <td className="py-2 text-black">{f.email}</td>
                   </tr>
                 ))}
                 {fornecedores.length === 0 && (

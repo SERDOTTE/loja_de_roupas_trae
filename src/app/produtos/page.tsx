@@ -66,11 +66,11 @@ function ProductForm({ fornecedores, onCreated }: { fornecedores: Fornecedor[]; 
 
   return (
     <form className="space-y-4" onSubmit={onSubmit}>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         <div>
-          <label className="block text-sm font-medium">Fornecedor</label>
+          <label className="block text-xs sm:text-sm font-medium text-black">Fornecedor</label>
           <select
-            className="mt-1 w-full rounded-md border px-3 py-2"
+            className="mt-1 w-full rounded-md border px-3 py-2 text-black"
             value={form.fornecedor_id}
             onChange={(e) => setForm((f) => ({ ...f, fornecedor_id: e.target.value }))}
           >
@@ -81,31 +81,31 @@ function ProductForm({ fornecedores, onCreated }: { fornecedores: Fornecedor[]; 
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium">Produto</label>
+          <label className="block text-xs sm:text-sm font-medium text-black">Produto</label>
           <input
             type="text"
-            className="mt-1 w-full rounded-md border px-3 py-2"
+            className="mt-1 w-full rounded-md border px-3 py-2 text-black"
             placeholder="Nome do produto"
             value={form.produto}
             onChange={(e) => setForm((f) => ({ ...f, produto: e.target.value }))}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium">Valor de entrada</label>
+          <label className="block text-xs sm:text-sm font-medium text-black">Valor de entrada</label>
           <input
             type="number"
             step="0.01"
-            className="mt-1 w-full rounded-md border px-3 py-2"
+            className="mt-1 w-full rounded-md border px-3 py-2 text-black"
             placeholder="0,00"
             value={form.valor_entrada}
             onChange={(e) => setForm((f) => ({ ...f, valor_entrada: e.target.value }))}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium">Data de entrada</label>
+          <label className="block text-xs sm:text-sm font-medium text-black">Data de entrada</label>
           <input
             type="date"
-            className="mt-1 w-full rounded-md border px-3 py-2"
+            className="mt-1 w-full rounded-md border px-3 py-2 text-black"
             value={form.data_entrada}
             onChange={(e) => setForm((f) => ({ ...f, data_entrada: e.target.value }))}
           />
@@ -114,36 +114,36 @@ function ProductForm({ fornecedores, onCreated }: { fornecedores: Fornecedor[]; 
 
       <div className="flex items-center gap-2">
         <input id="vendido" type="checkbox" checked={vendido} onChange={(e) => setVendido(e.target.checked)} />
-        <label htmlFor="vendido" className="text-sm">Vendido</label>
+        <label htmlFor="vendido" className="text-xs sm:text-sm text-black">Vendido</label>
       </div>
 
       {vendido && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           <div>
-            <label className="block text-sm font-medium">Valor de venda</label>
+            <label className="block text-xs sm:text-sm font-medium text-black">Valor de venda</label>
             <input
               type="number"
               step="0.01"
-              className="mt-1 w-full rounded-md border px-3 py-2"
+              className="mt-1 w-full rounded-md border px-3 py-2 text-black"
               placeholder="0,00"
               value={form.valor_venda}
               onChange={(e) => setForm((f) => ({ ...f, valor_venda: e.target.value }))}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium">Data da venda</label>
+            <label className="block text-xs sm:text-sm font-medium text-black">Data da venda</label>
             <input
               type="date"
-              className="mt-1 w-full rounded-md border px-3 py-2"
+              className="mt-1 w-full rounded-md border px-3 py-2 text-black"
               value={form.data_venda}
               onChange={(e) => setForm((f) => ({ ...f, data_venda: e.target.value }))}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium">Data do recebimento</label>
+            <label className="block text-xs sm:text-sm font-medium text-black">Data do recebimento</label>
             <input
               type="date"
-              className="mt-1 w-full rounded-md border px-3 py-2"
+              className="mt-1 w-full rounded-md border px-3 py-2 text-black"
               value={form.data_recebimento}
               onChange={(e) => setForm((f) => ({ ...f, data_recebimento: e.target.value }))}
             />
@@ -151,8 +151,8 @@ function ProductForm({ fornecedores, onCreated }: { fornecedores: Fornecedor[]; 
         </div>
       )}
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      <button type="submit" disabled={loading} className="rounded-md bg-green-600 px-4 py-2 text-white hover:bg-green-700 disabled:opacity-60">
+      {error && <p className="text-xs sm:text-sm text-red-600">{error}</p>}
+      <button type="submit" disabled={loading} className="w-full sm:w-auto rounded-md bg-green-600 px-4 py-2 text-sm sm:text-base text-white hover:bg-green-700 disabled:opacity-60">
         {loading ? "Salvando..." : "Salvar produto"}
       </button>
     </form>
@@ -235,35 +235,35 @@ export default function ProdutosPage() {
 
   return (
     <ProtectedRoute>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Produtos</h2>
+          <h2 className="text-lg sm:text-xl font-semibold text-black">Produtos</h2>
         </div>
 
-        <div className="rounded-lg border bg-white p-4">
-          <h3 className="text-lg font-medium">Cadastrar produto</h3>
+        <div className="rounded-lg border bg-white p-3 sm:p-4">
+          <h3 className="text-base sm:text-lg font-medium text-black">Cadastrar produto</h3>
           <div className="mt-4">
             <ProductForm fornecedores={fornecedores} onCreated={handleProductCreated} />
           </div>
         </div>
 
         <div className="rounded-lg border bg-white">
-          <div className="p-4 border-b">
-            <h3 className="text-lg font-medium">Lista de produtos</h3>
+          <div className="p-3 sm:p-4 border-b">
+            <h3 className="text-base sm:text-lg font-medium text-black">Lista de produtos</h3>
           </div>
-          {error && <div className="p-4 text-red-600">{error}</div>}
-          <div className="p-4 overflow-x-auto">
-            <table className="min-w-full text-sm">
+          {error && <div className="p-3 sm:p-4 text-xs sm:text-sm text-red-600">{error}</div>}
+          <div className="p-3 sm:p-4 overflow-x-auto">
+            <table className="min-w-full text-xs sm:text-sm">
               <thead>
                 <tr className="text-left">
-                  <th className="py-2">Produto</th>
-                  <th className="py-2">Fornecedor</th>
-                  <th className="py-2">Entrada</th>
-                  <th className="py-2">Data entrada</th>
-                  <th className="py-2">Vendido</th>
-                  <th className="py-2">Venda</th>
-                  <th className="py-2">Data venda</th>
-                  <th className="py-2">Recebimento</th>
+                  <th className="py-2 text-black">Produto</th>
+                  <th className="py-2 text-black">Fornecedor</th>
+                  <th className="py-2 text-black">Entrada</th>
+                  <th className="py-2 text-black">Data entrada</th>
+                  <th className="py-2 text-black">Vendido</th>
+                  <th className="py-2 text-black">Venda</th>
+                  <th className="py-2 text-black">Data venda</th>
+                  <th className="py-2 text-black">Recebimento</th>
                 </tr>
               </thead>
               <tbody>
@@ -273,14 +273,14 @@ export default function ProdutosPage() {
                     className={`border-t cursor-pointer hover:bg-gray-50 ${!p.vendido ? "hover:bg-blue-50" : ""}`}
                     onClick={() => !p.vendido && handleEditProduct(p)}
                   >
-                    <td className="py-2">{p.produto}</td>
-                    <td className="py-2">{fornecedores.find(f => f.id === p.fornecedor_id)?.nome || "-"}</td>
-                    <td className="py-2">R$ {p.valor_entrada?.toFixed(2)}</td>
-                    <td className="py-2">{p.data_entrada}</td>
-                    <td className="py-2">{p.vendido ? "✓ Sim" : "✗ Não"}</td>
-                    <td className="py-2">{p.valor_venda ? `R$ ${p.valor_venda.toFixed(2)}` : "-"}</td>
-                    <td className="py-2">{p.data_venda || "-"}</td>
-                    <td className="py-2">{p.data_recebimento || "-"}</td>
+                    <td className="py-2 text-black">{p.produto}</td>
+                    <td className="py-2 text-black">{fornecedores.find(f => f.id === p.fornecedor_id)?.nome || "-"}</td>
+                    <td className="py-2 text-black">R$ {p.valor_entrada?.toFixed(2)}</td>
+                    <td className="py-2 text-black">{p.data_entrada}</td>
+                    <td className="py-2 text-black">{p.vendido ? "✓ Sim" : "✗ Não"}</td>
+                    <td className="py-2 text-black">{p.valor_venda ? `R$ ${p.valor_venda.toFixed(2)}` : "-"}</td>
+                    <td className="py-2 text-black">{p.data_venda || "-"}</td>
+                    <td className="py-2 text-black">{p.data_recebimento || "-"}</td>
                   </tr>
                 ))}
                 {produtos.length === 0 && (
@@ -294,46 +294,46 @@ export default function ProdutosPage() {
         </div>
 
         {editingProduct && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-            <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-2 sm:p-4">
+            <div className="w-full max-w-md rounded-lg bg-white p-4 sm:p-6 shadow-lg">
               <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-xl font-semibold">Registrar Venda</h3>
+                <h3 className="text-lg sm:text-xl font-semibold text-black">Registrar Venda</h3>
                 <button onClick={() => setEditingProduct(null)} className="text-gray-500 hover:text-gray-700">✕</button>
               </div>
 
               <div className="mb-4 rounded-md bg-blue-50 p-3 border border-blue-200">
-                <p className="text-sm text-gray-700"><strong>Produto:</strong> {editingProduct.produto}</p>
-                <p className="text-sm text-gray-700"><strong>Fornecedor:</strong> {fornecedores.find(f => f.id === editingProduct.fornecedor_id)?.nome}</p>
-                <p className="text-sm text-gray-700"><strong>Valor de entrada:</strong> R$ {editingProduct.valor_entrada?.toFixed(2)}</p>
-                <p className="text-sm text-gray-700"><strong>Data de entrada:</strong> {editingProduct.data_entrada}</p>
+                <p className="text-xs sm:text-sm text-black"><strong>Produto:</strong> {editingProduct.produto}</p>
+                <p className="text-xs sm:text-sm text-black"><strong>Fornecedor:</strong> {fornecedores.find(f => f.id === editingProduct.fornecedor_id)?.nome}</p>
+                <p className="text-xs sm:text-sm text-black"><strong>Valor de entrada:</strong> R$ {editingProduct.valor_entrada?.toFixed(2)}</p>
+                <p className="text-xs sm:text-sm text-black"><strong>Data de entrada:</strong> {editingProduct.data_entrada}</p>
               </div>
 
               <form className="space-y-4" onSubmit={handleSaveEdit}>
                 <div>
-                  <label className="block text-sm font-medium">Valor de venda *</label>
+                  <label className="block text-xs sm:text-sm font-medium text-black">Valor de venda *</label>
                   <input
                     type="number"
                     step="0.01"
-                    className="mt-1 w-full rounded-md border px-3 py-2"
+                    className="mt-1 w-full rounded-md border px-3 py-2 text-black"
                     placeholder="0,00"
                     value={editForm.valor_venda}
                     onChange={(e) => setEditForm((f) => ({ ...f, valor_venda: e.target.value }))}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium">Data da venda *</label>
+                  <label className="block text-xs sm:text-sm font-medium text-black">Data da venda *</label>
                   <input
                     type="date"
-                    className="mt-1 w-full rounded-md border px-3 py-2"
+                    className="mt-1 w-full rounded-md border px-3 py-2 text-black"
                     value={editForm.data_venda}
                     onChange={(e) => setEditForm((f) => ({ ...f, data_venda: e.target.value }))}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium">Data do recebimento *</label>
+                  <label className="block text-xs sm:text-sm font-medium text-black">Data do recebimento *</label>
                   <input
                     type="date"
-                    className="mt-1 w-full rounded-md border px-3 py-2"
+                    className="mt-1 w-full rounded-md border px-3 py-2 text-black"
                     value={editForm.data_recebimento}
                     onChange={(e) => setEditForm((f) => ({ ...f, data_recebimento: e.target.value }))}
                   />
@@ -343,14 +343,14 @@ export default function ProdutosPage() {
                   <button
                     type="button"
                     onClick={() => setEditingProduct(null)}
-                    className="flex-1 rounded-md border px-4 py-2 text-gray-700 hover:bg-gray-50"
+                    className="flex-1 rounded-md border px-4 py-2 text-xs sm:text-sm text-black hover:bg-gray-50"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
                     disabled={editLoading}
-                    className="flex-1 rounded-md bg-purple-600 px-4 py-2 text-white hover:bg-purple-700 disabled:opacity-60"
+                    className="flex-1 rounded-md bg-purple-600 px-4 py-2 text-xs sm:text-sm text-white hover:bg-purple-700 disabled:opacity-60"
                   >
                     {editLoading ? "Salvando..." : "Registrar Venda"}
                   </button>

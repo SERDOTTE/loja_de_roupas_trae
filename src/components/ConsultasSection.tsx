@@ -61,17 +61,17 @@ export function ConsultasSection() {
   ];
 
   return (
-    <div className="rounded-lg border bg-white p-4 shadow-sm">
-      <h2 className="text-lg font-semibold mb-4">Consultas</h2>
+    <div className="rounded-lg border bg-white p-3 sm:p-4 shadow-sm">
+      <h2 className="text-base sm:text-lg font-semibold text-black mb-4">Consultas</h2>
 
       <form className="space-y-4" onSubmit={handleConsultar}>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Mês</label>
+            <label className="block text-xs sm:text-sm font-medium text-black mb-1">Mês</label>
             <select
               value={mes}
               onChange={(e) => setMes(e.target.value)}
-              className="w-full rounded-md border px-3 py-2"
+              className="w-full rounded-md border px-3 py-2 text-black"
             >
               {meses.map((m) => (
                 <option key={m.value} value={m.value}>
@@ -81,14 +81,14 @@ export function ConsultasSection() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Ano</label>
+            <label className="block text-xs sm:text-sm font-medium text-black mb-1">Ano</label>
             <input
               type="number"
               value={ano}
               onChange={(e) => setAno(e.target.value)}
               min="2020"
               max={new Date().getFullYear() + 1}
-              className="w-full rounded-md border px-3 py-2"
+              className="w-full rounded-md border px-3 py-2 text-black"
             />
           </div>
         </div>
@@ -96,35 +96,35 @@ export function ConsultasSection() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700 disabled:opacity-60"
+          className="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm sm:text-base text-white hover:bg-indigo-700 disabled:opacity-60"
         >
           {loading ? "Consultando..." : "Consultar Vendas"}
         </button>
       </form>
 
-      {error && <div className="mt-4 rounded-md bg-red-50 p-3 text-red-600 text-sm">{error}</div>}
+      {error && <div className="mt-4 rounded-md bg-red-50 p-3 text-red-600 text-xs sm:text-sm">{error}</div>}
 
       {resultado && (
         <div className="mt-6 space-y-3 border-t pt-6">
-          <h3 className="font-semibold text-gray-800">
+          <h3 className="font-semibold text-black text-sm sm:text-base">
             Resultado - {meses.find((m) => m.value === mes)?.label} de {ano}
           </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="rounded-md bg-blue-50 p-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+            <div className="rounded-md bg-blue-50 p-2 sm:p-3">
               <p className="text-xs text-gray-600">Total de Vendas</p>
-              <p className="text-lg font-bold text-blue-600">{resultado.total_vendas}</p>
+              <p className="text-sm sm:text-lg font-bold text-blue-600 mt-1">{resultado.total_vendas}</p>
             </div>
-            <div className="rounded-md bg-green-50 p-3">
+            <div className="rounded-md bg-green-50 p-2 sm:p-3">
               <p className="text-xs text-gray-600">Total de Entrada</p>
-              <p className="text-lg font-bold text-green-600">{formatCurrency(resultado.total_entrada)}</p>
+              <p className="text-sm sm:text-lg font-bold text-green-600 mt-1">{formatCurrency(resultado.total_entrada)}</p>
             </div>
-            <div className="rounded-md bg-amber-50 p-3">
+            <div className="rounded-md bg-amber-50 p-2 sm:p-3">
               <p className="text-xs text-gray-600">Total de Venda</p>
-              <p className="text-lg font-bold text-amber-600">{formatCurrency(resultado.total_venda)}</p>
+              <p className="text-sm sm:text-lg font-bold text-amber-600 mt-1">{formatCurrency(resultado.total_venda)}</p>
             </div>
-            <div className="rounded-md bg-purple-50 p-3">
+            <div className="rounded-md bg-purple-50 p-2 sm:p-3">
               <p className="text-xs text-gray-600">Lucro</p>
-              <p className="text-lg font-bold text-purple-600">{formatCurrency(resultado.lucro)}</p>
+              <p className="text-sm sm:text-lg font-bold text-purple-600 mt-1">{formatCurrency(resultado.lucro)}</p>
             </div>
           </div>
         </div>

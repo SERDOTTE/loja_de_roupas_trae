@@ -42,16 +42,16 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 p-4">
-      <div className="w-full max-w-md rounded-lg bg-white shadow-lg p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Loja de Roupas</h1>
-          <p className="text-gray-600 mt-2">Sistema de Gestão</p>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 p-2 sm:p-4">
+      <div className="w-full max-w-md rounded-lg bg-white shadow-lg p-4 sm:p-8">
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-black">Loja de Roupas</h1>
+          <p className="text-gray-600 mt-2 text-sm sm:text-base">Sistema de Gestão</p>
         </div>
 
         <form className="space-y-4" onSubmit={handleLogin}>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-xs sm:text-sm font-medium text-black mb-1">
               Email
             </label>
             <input
@@ -59,12 +59,12 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="seu@email.com"
-              className="w-full rounded-md border border-gray-300 px-4 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-md border border-gray-300 px-3 sm:px-4 py-2 text-black placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-xs sm:text-sm font-medium text-black mb-1">
               Senha
             </label>
             <input
@@ -72,12 +72,12 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full rounded-md border border-gray-300 px-4 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-md border border-gray-300 px-3 sm:px-4 py-2 text-black placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
 
           {error && (
-            <div className="rounded-md bg-red-50 p-3 text-sm text-red-600">
+            <div className="rounded-md bg-red-50 p-3 text-xs sm:text-sm text-red-600">
               {error}
             </div>
           )}
@@ -85,13 +85,13 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-md bg-blue-600 px-4 py-2 text-white font-medium hover:bg-blue-700 disabled:opacity-60 transition-colors"
+            className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm sm:text-base text-white font-medium hover:bg-blue-700 disabled:opacity-60 transition-colors"
           >
             {loading ? "Entrando..." : "Entrar"}
           </button>
         </form>
 
-        <div className="mt-6 pt-6 border-t border-gray-200 text-center text-sm text-gray-600">
+        <div className="mt-6 pt-6 border-t border-gray-200 text-center text-xs sm:text-sm text-gray-600">
           <p>Credenciais de acesso via Supabase Authentication</p>
         </div>
       </div>

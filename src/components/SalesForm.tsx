@@ -82,9 +82,9 @@ export function SalesForm({ onCreated }: { onCreated?: () => void }) {
   return (
     <form className="space-y-4" onSubmit={onSubmit}>
       <div>
-        <label className="block text-sm font-medium mb-2">Fornecedor</label>
+        <label className="block text-xs sm:text-sm font-medium text-black mb-2">Fornecedor</label>
         <select
-          className="w-full rounded-md border px-3 py-2"
+          className="w-full rounded-md border px-3 py-2 text-black"
           value={selectedFornecedor}
           onChange={(e) => setSelectedFornecedor(e.target.value)}
         >
@@ -99,9 +99,9 @@ export function SalesForm({ onCreated }: { onCreated?: () => void }) {
 
       {selectedFornecedor && (
         <div>
-          <label className="block text-sm font-medium mb-2">Produtos não vendidos</label>
+          <label className="block text-xs sm:text-sm font-medium text-black mb-2">Produtos não vendidos</label>
           {produtos.length === 0 ? (
-            <p className="text-sm text-gray-500 text-center py-4">Nenhum produto não vendido para este fornecedor.</p>
+            <p className="text-xs sm:text-sm text-gray-500 text-center py-4">Nenhum produto não vendido para este fornecedor.</p>
           ) : (
             <div className="space-y-2 max-h-64 overflow-y-auto border rounded-md p-3">
               {produtos.map((p) => (
@@ -109,18 +109,18 @@ export function SalesForm({ onCreated }: { onCreated?: () => void }) {
                   key={p.id}
                   type="button"
                   onClick={() => setSelectedProduto(p.id)}
-                  className={`w-full text-left p-3 rounded-md border-2 transition-colors ${
+                  className={`w-full text-left p-2 sm:p-3 rounded-md border-2 transition-colors text-black ${
                     selectedProduto === p.id
                       ? "border-purple-600 bg-purple-50"
                       : "border-gray-200 bg-gray-50 hover:bg-gray-100"
                   }`}
                 >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-medium text-sm">{p.produto}</p>
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="min-w-0">
+                      <p className="font-medium text-xs sm:text-sm">{p.produto}</p>
                       <p className="text-xs text-gray-600">Entrada: {p.data_entrada}</p>
                     </div>
-                    <p className="font-semibold text-sm">R$ {p.valor_entrada?.toFixed(2)}</p>
+                    <p className="font-semibold text-xs sm:text-sm whitespace-nowrap">R$ {p.valor_entrada?.toFixed(2)}</p>
                   </div>
                 </button>
               ))}
@@ -130,46 +130,46 @@ export function SalesForm({ onCreated }: { onCreated?: () => void }) {
       )}
 
       {selectedProductData && (
-        <div className="rounded-md bg-blue-50 p-4 border border-blue-200">
-          <p className="text-sm text-gray-700">
+        <div className="rounded-md bg-blue-50 p-3 sm:p-4 border border-blue-200">
+          <p className="text-xs sm:text-sm text-black">
             <strong>Produto:</strong> {selectedProductData.produto}
           </p>
-          <p className="text-sm text-gray-700">
+          <p className="text-xs sm:text-sm text-black">
             <strong>Valor de entrada:</strong> R$ {selectedProductData.valor_entrada?.toFixed(2)}
           </p>
-          <p className="text-sm text-gray-700">
+          <p className="text-xs sm:text-sm text-black">
             <strong>Data de entrada:</strong> {selectedProductData.data_entrada}
           </p>
         </div>
       )}
 
       {selectedProduto && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 pt-4 border-t">
           <div>
-            <label className="block text-sm font-medium">Valor de venda *</label>
+            <label className="block text-xs sm:text-sm font-medium text-black">Valor de venda *</label>
             <input
               type="number"
               step="0.01"
-              className="mt-1 w-full rounded-md border px-3 py-2"
+              className="mt-1 w-full rounded-md border px-3 py-2 text-black"
               placeholder="0,00"
               value={form.valor_venda}
               onChange={(e) => setForm((f) => ({ ...f, valor_venda: e.target.value }))}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium">Data da venda *</label>
+            <label className="block text-xs sm:text-sm font-medium text-black">Data da venda *</label>
             <input
               type="date"
-              className="mt-1 w-full rounded-md border px-3 py-2"
+              className="mt-1 w-full rounded-md border px-3 py-2 text-black"
               value={form.data_venda}
               onChange={(e) => setForm((f) => ({ ...f, data_venda: e.target.value }))}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium">Data do recebimento *</label>
+            <label className="block text-xs sm:text-sm font-medium text-black">Data do recebimento *</label>
             <input
               type="date"
-              className="mt-1 w-full rounded-md border px-3 py-2"
+              className="mt-1 w-full rounded-md border px-3 py-2 text-black"
               value={form.data_recebimento}
               onChange={(e) => setForm((f) => ({ ...f, data_recebimento: e.target.value }))}
             />
@@ -177,12 +177,12 @@ export function SalesForm({ onCreated }: { onCreated?: () => void }) {
         </div>
       )}
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-xs sm:text-sm text-red-600">{error}</p>}
       <div className="flex gap-2 pt-4">
         <button
           type="submit"
           disabled={loading || !selectedProduto}
-          className="flex-1 rounded-md bg-purple-600 px-4 py-2 text-white hover:bg-purple-700 disabled:opacity-60"
+          className="flex-1 rounded-md bg-purple-600 px-4 py-2 text-sm sm:text-base text-white hover:bg-purple-700 disabled:opacity-60"
         >
           {loading ? "Salvando..." : "Registrar Venda"}
         </button>

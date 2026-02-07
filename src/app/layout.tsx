@@ -26,10 +26,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-br">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
+      </head>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 text-black`}>
         <AuthProvider>
           <HeaderNav />
-          <main className="max-w-6xl mx-auto px-4 py-6">{children}</main>
+          <main className="max-w-6xl mx-auto px-2 sm:px-4 py-4 sm:py-6">{children}</main>
         </AuthProvider>
       </body>
     </html>
