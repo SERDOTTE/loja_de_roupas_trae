@@ -111,19 +111,19 @@ export function ConsultasSection() {
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
             <div className="rounded-md bg-blue-50 p-2 sm:p-3">
-              <p className="text-xs text-gray-600">Total de Vendas</p>
+              <p className="text-xs text-black">Total de Vendas</p>
               <p className="text-sm sm:text-lg font-bold text-blue-600 mt-1">{resultado.total_vendas}</p>
             </div>
             <div className="rounded-md bg-green-50 p-2 sm:p-3">
-              <p className="text-xs text-gray-600">Total de Entrada</p>
+              <p className="text-xs text-black">Total de Entrada</p>
               <p className="text-sm sm:text-lg font-bold text-green-600 mt-1">{formatCurrency(resultado.total_entrada)}</p>
             </div>
             <div className="rounded-md bg-amber-50 p-2 sm:p-3">
-              <p className="text-xs text-gray-600">Total de Venda</p>
+              <p className="text-xs text-black">Total de Venda</p>
               <p className="text-sm sm:text-lg font-bold text-amber-600 mt-1">{formatCurrency(resultado.total_venda)}</p>
             </div>
             <div className="rounded-md bg-purple-50 p-2 sm:p-3">
-              <p className="text-xs text-gray-600">Lucro</p>
+              <p className="text-xs text-black">Lucro</p>
               <p className="text-sm sm:text-lg font-bold text-purple-600 mt-1">{formatCurrency(resultado.lucro)}</p>
             </div>
           </div>

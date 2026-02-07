@@ -285,7 +285,7 @@ export default function ProdutosPage() {
                 ))}
                 {produtos.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="py-4 text-center text-gray-500">Nenhum produto cadastrado.</td>
+                    <td colSpan={8} className="py-4 text-center text-black">Nenhum produto cadastrado.</td>
                   </tr>
                 )}
               </tbody>
@@ -298,7 +298,7 @@ export default function ProdutosPage() {
             <div className="w-full max-w-md rounded-lg bg-white p-4 sm:p-6 shadow-lg">
               <div className="mb-4 flex items-center justify-between">
                 <h3 className="text-lg sm:text-xl font-semibold text-black">Registrar Venda</h3>
-                <button onClick={() => setEditingProduct(null)} className="text-gray-500 hover:text-gray-700">✕</button>
+                <button onClick={() => setEditingProduct(null)} className="text-black hover:text-gray-700">✕</button>
               </div>
 
               <div className="mb-4 rounded-md bg-blue-50 p-3 border border-blue-200">

@@ -68,14 +68,14 @@ export function SalesListModal({ onClose }: { onClose: () => void }) {
       <div className="w-full max-w-4xl max-h-[90vh] rounded-lg bg-white shadow-lg overflow-hidden flex flex-col">
         <div className="sticky top-0 bg-white border-b p-3 sm:p-6 flex items-center justify-between">
           <h3 className="text-lg sm:text-2xl font-semibold text-black">Vendas do Mês</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">✕</button>
+          <button onClick={onClose} className="text-black hover:text-gray-700 text-2xl">✕</button>
         </div>
 
         <div className="overflow-y-auto flex-1 p-3 sm:p-6">
           {loading ? (
-            <p className="text-center text-gray-500">Carregando...</p>
+            <p className="text-center text-black">Carregando...</p>
           ) : vendas.length === 0 ? (
-            <p className="text-center text-gray-500">Nenhuma venda registrada este mês.</p>
+            <p className="text-center text-black">Nenhuma venda registrada este mês.</p>
           ) : (
             <div className="space-y-4 sm:space-y-6">
               {Object.entries(vendidosPorFornecedor).map(([fornecedorId, vendas]) => {
@@ -90,15 +90,15 @@ export function SalesListModal({ onClose }: { onClose: () => void }) {
                       <h4 className="text-base sm:text-lg font-semibold text-black">{fornecedor?.nome || "Desconhecido"}</h4>
                       <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 text-xs sm:text-sm">
                         <div>
-                          <p className="text-gray-600">Total de Entrada</p>
+                          <p className="text-black">Total de Entrada</p>
                           <p className="font-semibold text-blue-600">{formatCurrency(totalEntrada)}</p>
                         </div>
                         <div>
-                          <p className="text-gray-600">Total de Vendas</p>
+                          <p className="text-black">Total de Vendas</p>
                           <p className="font-semibold text-green-600">{formatCurrency(totalVendas)}</p>
                         </div>
                         <div>
-                          <p className="text-gray-600">Lucro</p>
+                          <p className="text-black">Lucro</p>
                           <p className="font-semibold text-purple-600">{formatCurrency(lucro)}</p>
                         </div>
                       </div>
@@ -109,27 +109,27 @@ export function SalesListModal({ onClose }: { onClose: () => void }) {
                         <div key={venda.id} className="bg-white p-2 sm:p-3 rounded border border-gray-200">
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 text-xs sm:text-sm">
                             <div>
-                              <p className="text-gray-600 text-xs">Produto</p>
+                              <p className="text-black text-xs">Produto</p>
                               <p className="font-medium text-black">{venda.produto}</p>
                             </div>
                             <div>
-                              <p className="text-gray-600 text-xs">Entrada</p>
+                              <p className="text-black text-xs">Entrada</p>
                               <p className="font-medium text-blue-600">{formatCurrency(venda.valor_entrada)}</p>
                             </div>
                             <div>
-                              <p className="text-gray-600 text-xs">Venda</p>
+                              <p className="text-black text-xs">Venda</p>
                               <p className="font-medium text-green-600">{formatCurrency(venda.valor_venda)}</p>
                             </div>
                             <div>
-                              <p className="text-gray-600 text-xs">Lucro</p>
+                              <p className="text-black text-xs">Lucro</p>
                               <p className="font-medium text-purple-600">{formatCurrency(venda.valor_venda - venda.valor_entrada)}</p>
                             </div>
                             <div className="col-span-2 sm:col-span-2">
-                              <p className="text-gray-600 text-xs">Data da Venda</p>
+                              <p className="text-black text-xs">Data da Venda</p>
                               <p className="font-medium text-black">{formatDate(venda.data_venda)}</p>
                             </div>
                             <div className="col-span-2 sm:col-span-2">
-                              <p className="text-gray-600 text-xs">Data do Recebimento</p>
+                              <p className="text-black text-xs">Data do Recebimento</p>
                               <p className="font-medium text-black">{formatDate(venda.data_recebimento)}</p>
                             </div>
                           </div>
