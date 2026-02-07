@@ -255,37 +255,37 @@ export default function ProdutosPage() {
           <div className="p-3 sm:p-4 overflow-x-auto">
             <table className="min-w-full text-xs sm:text-sm">
               <thead>
-                <tr className="text-left">
-                  <th className="py-2 text-black">Produto</th>
-                  <th className="py-2 text-black">Fornecedor</th>
-                  <th className="py-2 text-black">Entrada</th>
-                  <th className="py-2 text-black">Data entrada</th>
-                  <th className="py-2 text-black">Vendido</th>
-                  <th className="py-2 text-black">Venda</th>
-                  <th className="py-2 text-black">Data venda</th>
-                  <th className="py-2 text-black">Recebimento</th>
+                <tr className="text-left bg-gray-50 border-b-2 border-gray-200">
+                  <th className="py-3 px-4 sm:px-6 text-black font-semibold">Produto</th>
+                  <th className="py-3 px-4 sm:px-6 text-black font-semibold">Fornecedor</th>
+                  <th className="py-3 px-4 sm:px-6 text-black font-semibold">Entrada</th>
+                  <th className="py-3 px-4 sm:px-6 text-black font-semibold">Data entrada</th>
+                  <th className="py-3 px-4 sm:px-6 text-black font-semibold">Vendido</th>
+                  <th className="py-3 px-4 sm:px-6 text-black font-semibold">Venda</th>
+                  <th className="py-3 px-4 sm:px-6 text-black font-semibold">Data venda</th>
+                  <th className="py-3 px-4 sm:px-6 text-black font-semibold">Recebimento</th>
                 </tr>
               </thead>
               <tbody>
-                {produtos.map((p) => (
+                {produtos.map((p, index) => (
                   <tr
                     key={p.id}
-                    className={`border-t cursor-pointer hover:bg-gray-50 ${!p.vendido ? "hover:bg-blue-50" : ""}`}
+                    className={`border-b cursor-pointer ${index % 2 === 0 ? 'bg-green-50' : 'bg-white'} hover:bg-green-100 transition-colors ${!p.vendido ? "cursor-pointer" : ""}`}
                     onClick={() => !p.vendido && handleEditProduct(p)}
                   >
-                    <td className="py-2 text-black">{p.produto}</td>
-                    <td className="py-2 text-black">{fornecedores.find(f => f.id === p.fornecedor_id)?.nome || "-"}</td>
-                    <td className="py-2 text-black">R$ {p.valor_entrada?.toFixed(2)}</td>
-                    <td className="py-2 text-black">{p.data_entrada}</td>
-                    <td className="py-2 text-black">{p.vendido ? "✓ Sim" : "✗ Não"}</td>
-                    <td className="py-2 text-black">{p.valor_venda ? `R$ ${p.valor_venda.toFixed(2)}` : "-"}</td>
-                    <td className="py-2 text-black">{p.data_venda || "-"}</td>
-                    <td className="py-2 text-black">{p.data_recebimento || "-"}</td>
+                    <td className="py-3 px-4 sm:px-6 text-black">{p.produto}</td>
+                    <td className="py-3 px-4 sm:px-6 text-black">{fornecedores.find(f => f.id === p.fornecedor_id)?.nome || "-"}</td>
+                    <td className="py-3 px-4 sm:px-6 text-black">R$ {p.valor_entrada?.toFixed(2)}</td>
+                    <td className="py-3 px-4 sm:px-6 text-black">{p.data_entrada}</td>
+                    <td className="py-3 px-4 sm:px-6 text-black">{p.vendido ? "✓ Sim" : "✗ Não"}</td>
+                    <td className="py-3 px-4 sm:px-6 text-black">{p.valor_venda ? `R$ ${p.valor_venda.toFixed(2)}` : "-"}</td>
+                    <td className="py-3 px-4 sm:px-6 text-black">{p.data_venda || "-"}</td>
+                    <td className="py-3 px-4 sm:px-6 text-black">{p.data_recebimento || "-"}</td>
                   </tr>
                 ))}
                 {produtos.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="py-4 text-center text-black">Nenhum produto cadastrado.</td>
+                    <td colSpan={8} className="py-4 px-4 sm:px-6 text-center text-black">Nenhum produto cadastrado.</td>
                   </tr>
                 )}
               </tbody>

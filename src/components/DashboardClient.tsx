@@ -8,32 +8,64 @@ export default function DashboardClient() {
   const [produtos, setProdutos] = useState<any[]>([]);
   const [showSalesModal, setShowSalesModal] = useState(false);
   const [showSalesListModal, setShowSalesListModal] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [currentMonth, setCurrentMonth] = useState<string>("");
 
-  const loadProdutos = useCallback(async () => {
-    const currentMonthStart = new Date();
-    currentMonthStart.setDate(1);
-    currentMonthStart.setHours(0, 0, 0, 0);
+  const meses = [
+    { valor: 1, label: "Janeiro" },
+    { valor: 2, label: "Fevereiro" },
+    { valor: 3, label: "Março" },
+    { valor: 4, label: "Abril" },
+    { valor: 5, label: "Maio" },
+    { valor: 6, label: "Junho" },
+    { valor: 7, label: "Julho" },
+    { valor: 8, label: "Agosto" },
+    { valor: 9, label: "Setembro" },
+    { valor: 10, label: "Outubro" },
+    { valor: 11, label: "Novembro" },
+    { valor: 12, label: "Dezembro" },
+  ];
 
-    const nextMonthStart = new Date(currentMonthStart);
-    nextMonthStart.setMonth(currentMonthStart.getMonth() + 1);
+  const loadProdutos = useCallback(async (mes: number, ano: number) => {
+    // Formatar datas como YYYY-MM-DD para comparação exata
+    const monthStart = new Date(ano, mes - 1, 1);
+    const monthEnd = new Date(ano, mes, 1);
 
-    const { data } = await supabase
+    const startDate = monthStart.toISOString().split('T')[0]; // YYYY-MM-DD
+    const endDate = monthEnd.toISOString().split('T')[0];     // YYYY-MM-DD
+
+    console.log(`Filtrando vendas de ${startDate} a ${endDate}`);
+
+    const { data, error } = await supabase
       .from("produtos")
       .select("*")
-      .gte("data_venda", currentMonthStart.toISOString())
-      .lt("data_venda", nextMonthStart.toISOString());
+      .eq("vendido", true)
+      .gte("data_venda", startDate)
+      .lt("data_venda", endDate);
+    
+    if (error) {
+      console.error("Erro ao carregar produtos:", error);
+    }
+    
+    console.log(`Produtos encontrados: ${data?.length || 0}`);
     setProdutos(data || []);
   }, [supabase]);
 
   useEffect(() => {
-    loadProdutos();
+    loadProdutos(selectedMonth, selectedYear);
     
-    // Definir o mês atual
-    const now = new Date();
-    const monthName = now.toLocaleString("pt-BR", { month: "long", year: "numeric" });
-    setCurrentMonth(monthName.charAt(0).toUpperCase() + monthName.slice(1));
-  }, [loadProdutos]);
+    const monthName = meses.find(m => m.valor === selectedMonth)?.label || "";
+    setCurrentMonth(`${monthName} de ${selectedYear}`);
+  }, [selectedMonth, selectedYear, loadProdutos, meses]);
+
+  const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedMonth(parseInt(e.target.value));
+  };
+
+  const handleYearChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSelectedYear(parseInt(e.target.value));
+  };
 
   const totals = useMemo(() => {
     const totalVendas = produtos.length;
@@ -50,16 +82,49 @@ export default function DashboardClient() {
   return (
     <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2">
       <div className="rounded-lg border bg-white p-3 sm:p-4 shadow-sm">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-2 mb-4">
+        <div className="flex flex-col gap-3 mb-4">
           <h2 className="text-base sm:text-lg font-semibold text-black">Resumo do mês</h2>
-          <p className="text-xs sm:text-sm text-black">{currentMonth}</p>
+          
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <div className="flex-1">
+              <label className="block text-xs sm:text-sm font-medium text-black mb-1">Mês</label>
+              <select
+                value={selectedMonth}
+                onChange={handleMonthChange}
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-black text-xs sm:text-sm"
+              >
+                {meses.map((m) => (
+                  <option key={m.valor} value={m.valor}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex-1">
+              <label className="block text-xs sm:text-sm font-medium text-black mb-1">Ano</label>
+              <input
+                type="number"
+                value={selectedYear}
+                onChange={handleYearChange}
+                min="2020"
+                max={new Date().getFullYear() + 1}
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-black text-xs sm:text-sm"
+              />
+            </div>
+          </div>
+
+          <p className="text-xs sm:text-sm font-medium text-blue-600 bg-blue-50 px-3 py-2 rounded-md">{currentMonth}</p>
         </div>
+
         {!supabase && (
           <p className="mt-2 text-xs sm:text-sm text-red-600">Supabase não configurado. Defina NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY.</p>
         )}
         <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4">
           <button
-            onClick={() => setShowSalesListModal(true)}
+            onClick={() => {
+              console.log(`[Dashboard Button Click] Abrindo modal para Mês: ${selectedMonth}, Ano: ${selectedYear}`);
+              setShowSalesListModal(true);
+            }}
             className="rounded-md bg-blue-50 p-3 sm:p-4 hover:bg-blue-100 transition-colors text-left cursor-pointer"
           >
             <p className="text-xs sm:text-sm text-black">Total de Vendas</p>
@@ -97,14 +162,14 @@ export default function DashboardClient() {
               </div>
               <SalesForm onCreated={() => {
                 setShowSalesModal(false);
-                loadProdutos();
+                loadProdutos(selectedMonth, selectedYear);
               }} />
             </div>
           </div>
         )}
       </div>
 
-      {showSalesListModal && <SalesListModal onClose={() => setShowSalesListModal(false)} />}
+      {showSalesListModal && <SalesListModal onClose={() => setShowSalesListModal(false)} selectedMonth={selectedMonth} selectedYear={selectedYear} />}
     </div>
   );
 }

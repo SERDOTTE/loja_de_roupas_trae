@@ -14,27 +14,37 @@ interface SaleData {
   fornecedor_id: string;
 }
 
-export function SalesListModal({ onClose }: { onClose: () => void }) {
+export function SalesListModal({ onClose, selectedMonth, selectedYear }: { onClose: () => void; selectedMonth: number; selectedYear: number }) {
   const [vendas, setVendas] = useState<SaleData[]>([]);
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
-      const currentMonthStart = new Date();
-      currentMonthStart.setDate(1);
-      currentMonthStart.setHours(0, 0, 0, 0);
+      setLoading(true);
+      // Usar os parâmetros passados do dashboard
+      const monthStart = new Date(selectedYear, selectedMonth - 1, 1);
+      const monthEnd = new Date(selectedYear, selectedMonth, 1);
 
-      const nextMonthStart = new Date(currentMonthStart);
-      nextMonthStart.setMonth(currentMonthStart.getMonth() + 1);
+      const startDate = monthStart.toISOString().split('T')[0]; // YYYY-MM-DD
+      const endDate = monthEnd.toISOString().split('T')[0];     // YYYY-MM-DD
 
-      const { data: vData } = await supabase
+      console.log(`[SalesListModal] Filtrando vendas de ${startDate} a ${endDate}`);
+      console.log(`[SalesListModal] Mês: ${selectedMonth}, Ano: ${selectedYear}`);
+
+      const { data: vData, error } = await supabase
         .from("produtos")
         .select("*")
         .eq("vendido", true)
-        .gte("data_venda", currentMonthStart.toISOString())
-        .lt("data_venda", nextMonthStart.toISOString())
+        .gte("data_venda", startDate)
+        .lt("data_venda", endDate)
         .order("data_venda", { ascending: false });
+
+      if (error) {
+        console.error("[SalesListModal] Erro ao carregar vendas:", error);
+      }
+
+      console.log(`[SalesListModal] Vendas encontradas: ${vData?.length || 0}`);
 
       const { data: fData } = await supabase.from("fornecedores").select("*");
 
@@ -42,7 +52,7 @@ export function SalesListModal({ onClose }: { onClose: () => void }) {
       setFornecedores(fData || []);
       setLoading(false);
     })();
-  }, [supabase]);
+  }, [selectedMonth, selectedYear, supabase]);
 
   const vendidosPorFornecedor = vendas.reduce(
     (acc, v) => {
