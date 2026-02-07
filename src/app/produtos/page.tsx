@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase.server";
 import { Produto, Fornecedor } from "@/types/db";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { formatDateToBR } from "@/lib/dateUtils";
 
 function ProductForm({ fornecedores, onCreated }: { fornecedores: Fornecedor[]; onCreated?: () => void }) {
   const [form, setForm] = useState({
@@ -276,11 +277,11 @@ export default function ProdutosPage() {
                     <td className="py-3 px-4 sm:px-6 text-black">{p.produto}</td>
                     <td className="py-3 px-4 sm:px-6 text-black">{fornecedores.find(f => f.id === p.fornecedor_id)?.nome || "-"}</td>
                     <td className="py-3 px-4 sm:px-6 text-black">R$ {p.valor_entrada?.toFixed(2)}</td>
-                    <td className="py-3 px-4 sm:px-6 text-black">{p.data_entrada}</td>
+                    <td className="py-3 px-4 sm:px-6 text-black">{formatDateToBR(p.data_entrada)}</td>
                     <td className="py-3 px-4 sm:px-6 text-black">{p.vendido ? "✓ Sim" : "✗ Não"}</td>
                     <td className="py-3 px-4 sm:px-6 text-black">{p.valor_venda ? `R$ ${p.valor_venda.toFixed(2)}` : "-"}</td>
-                    <td className="py-3 px-4 sm:px-6 text-black">{p.data_venda || "-"}</td>
-                    <td className="py-3 px-4 sm:px-6 text-black">{p.data_recebimento || "-"}</td>
+                    <td className="py-3 px-4 sm:px-6 text-black">{formatDateToBR(p.data_venda)}</td>
+                    <td className="py-3 px-4 sm:px-6 text-black">{formatDateToBR(p.data_recebimento)}</td>
                   </tr>
                 ))}
                 {produtos.length === 0 && (
@@ -305,7 +306,7 @@ export default function ProdutosPage() {
                 <p className="text-xs sm:text-sm text-black"><strong>Produto:</strong> {editingProduct.produto}</p>
                 <p className="text-xs sm:text-sm text-black"><strong>Fornecedor:</strong> {fornecedores.find(f => f.id === editingProduct.fornecedor_id)?.nome}</p>
                 <p className="text-xs sm:text-sm text-black"><strong>Valor de entrada:</strong> R$ {editingProduct.valor_entrada?.toFixed(2)}</p>
-                <p className="text-xs sm:text-sm text-black"><strong>Data de entrada:</strong> {editingProduct.data_entrada}</p>
+                <p className="text-xs sm:text-sm text-black"><strong>Data de entrada:</strong> {formatDateToBR(editingProduct.data_entrada)}</p>
               </div>
 
               <form className="space-y-4" onSubmit={handleSaveEdit}>

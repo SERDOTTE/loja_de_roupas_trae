@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase.server";
 import { Fornecedor } from "@/types/db";
+import { formatDateToBR } from "@/lib/dateUtils";
 
 interface SaleData {
   id: string;
@@ -69,10 +70,6 @@ export function SalesListModal({ onClose, selectedMonth, selectedYear }: { onClo
     return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   }
 
-  function formatDate(dateStr: string) {
-    return new Date(dateStr).toLocaleDateString("pt-BR");
-  }
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-2 sm:p-4">
       <div className="w-full max-w-4xl max-h-[90vh] rounded-lg bg-white shadow-lg overflow-hidden flex flex-col">
@@ -136,11 +133,11 @@ export function SalesListModal({ onClose, selectedMonth, selectedYear }: { onClo
                             </div>
                             <div className="col-span-2 sm:col-span-2">
                               <p className="text-black text-xs">Data da Venda</p>
-                              <p className="font-medium text-black">{formatDate(venda.data_venda)}</p>
+                              <p className="font-medium text-black">{formatDateToBR(venda.data_venda)}</p>
                             </div>
                             <div className="col-span-2 sm:col-span-2">
                               <p className="text-black text-xs">Data do Recebimento</p>
-                              <p className="font-medium text-black">{formatDate(venda.data_recebimento)}</p>
+                              <p className="font-medium text-black">{formatDateToBR(venda.data_recebimento)}</p>
                             </div>
                           </div>
                         </div>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase.server";
 import { Fornecedor, Produto } from "@/types/db";
+import { formatDateToBR } from "@/lib/dateUtils";
 
 export function SalesForm({ onCreated }: { onCreated?: () => void }) {
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
@@ -118,7 +119,7 @@ export function SalesForm({ onCreated }: { onCreated?: () => void }) {
                   <div className="flex justify-between items-start gap-2">
                     <div className="min-w-0">
                       <p className="font-medium text-xs sm:text-sm">{p.produto}</p>
-                      <p className="text-xs text-black">Entrada: {p.data_entrada}</p>
+                    <p className="text-xs text-black">Entrada: {formatDateToBR(p.data_entrada)}</p>
                     </div>
                     <p className="font-semibold text-xs sm:text-sm whitespace-nowrap">R$ {p.valor_entrada?.toFixed(2)}</p>
                   </div>
@@ -138,7 +139,7 @@ export function SalesForm({ onCreated }: { onCreated?: () => void }) {
             <strong>Valor de entrada:</strong> R$ {selectedProductData.valor_entrada?.toFixed(2)}
           </p>
           <p className="text-xs sm:text-sm text-black">
-            <strong>Data de entrada:</strong> {selectedProductData.data_entrada}
+            <strong>Data de entrada:</strong> {formatDateToBR(selectedProductData.data_entrada)}
           </p>
         </div>
       )}
