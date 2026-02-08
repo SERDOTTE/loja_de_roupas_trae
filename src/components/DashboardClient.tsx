@@ -27,37 +27,35 @@ export default function DashboardClient() {
     { valor: 12, label: "Dezembro" },
   ];
 
-  const loadProdutos = useCallback(async (mes: number, ano: number) => {
-    // Formatar datas como YYYY-MM-DD para comparação exata
-    const monthStart = new Date(ano, mes - 1, 1);
-    const monthEnd = new Date(ano, mes, 1);
-
-    const startDate = monthStart.toISOString().split('T')[0]; // YYYY-MM-DD
-    const endDate = monthEnd.toISOString().split('T')[0];     // YYYY-MM-DD
-
-    console.log(`Filtrando vendas de ${startDate} a ${endDate}`);
-
-    const { data, error } = await supabase
-      .from("produtos")
-      .select("*")
-      .eq("vendido", true)
-      .gte("data_venda", startDate)
-      .lt("data_venda", endDate);
-    
-    if (error) {
-      console.error("Erro ao carregar produtos:", error);
-    }
-    
-    console.log(`Produtos encontrados: ${data?.length || 0}`);
-    setProdutos(data || []);
-  }, [supabase]);
-
   useEffect(() => {
-    loadProdutos(selectedMonth, selectedYear);
-    
-    const monthName = meses.find(m => m.valor === selectedMonth)?.label || "";
-    setCurrentMonth(`${monthName} de ${selectedYear}`);
-  }, [selectedMonth, selectedYear, loadProdutos, meses]);
+    (async () => {
+      // Formatar datas como YYYY-MM-DD para comparação exata
+      const monthStart = new Date(selectedYear, selectedMonth - 1, 1);
+      const monthEnd = new Date(selectedYear, selectedMonth, 1);
+
+      const startDate = monthStart.toISOString().split('T')[0]; // YYYY-MM-DD
+      const endDate = monthEnd.toISOString().split('T')[0];     // YYYY-MM-DD
+
+      console.log(`Filtrando vendas de ${startDate} a ${endDate}`);
+
+      const { data, error } = await supabase
+        .from("produtos")
+        .select("*")
+        .eq("vendido", true)
+        .gte("data_venda", startDate)
+        .lt("data_venda", endDate);
+      
+      if (error) {
+        console.error("Erro ao carregar produtos:", error);
+      }
+      
+      console.log(`Produtos encontrados: ${data?.length || 0}`);
+      setProdutos(data || []);
+
+      const monthName = meses.find(m => m.valor === selectedMonth)?.label || "";
+      setCurrentMonth(`${monthName} de ${selectedYear}`);
+    })();
+  }, [selectedMonth, selectedYear]);
 
   const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedMonth(parseInt(e.target.value));
@@ -163,7 +161,22 @@ export default function DashboardClient() {
               </div>
               <SalesForm onCreated={() => {
                 setShowSalesModal(false);
-                loadProdutos(selectedMonth, selectedYear);
+                // Recarregar dados após nova venda
+                (async () => {
+                  const monthStart = new Date(selectedYear, selectedMonth - 1, 1);
+                  const monthEnd = new Date(selectedYear, selectedMonth, 1);
+                  const startDate = monthStart.toISOString().split('T')[0];
+                  const endDate = monthEnd.toISOString().split('T')[0];
+                  
+                  const { data } = await supabase
+                    .from("produtos")
+                    .select("*")
+                    .eq("vendido", true)
+                    .gte("data_venda", startDate)
+                    .lt("data_venda", endDate);
+                  
+                  setProdutos(data || []);
+                })();
               }} />
             </div>
           </div>
