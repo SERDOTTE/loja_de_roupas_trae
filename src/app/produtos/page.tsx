@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase.server";
 import { Produto, Fornecedor } from "@/types/db";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { formatDateToBR } from "@/lib/dateUtils";
+import { SalesForm } from "@/components/SalesForm";
 
 function ProductForm({ fornecedores, onCreated }: { fornecedores: Fornecedor[]; onCreated?: () => void }) {
   const [form, setForm] = useState({
@@ -175,7 +176,9 @@ function ProductForm({ fornecedores, onCreated }: { fornecedores: Fornecedor[]; 
 
 export default function ProdutosPage() {
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
-  const [produtos, setProdutos] = useState<Produto[]>([]);  const [error, setError] = useState<string | null>(null);
+  const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [produtoParaVender, setProdutoParaVender] = useState<string | null>(null);
 
   const handleProductCreated = useCallback(async () => {
     const { data: pData } = await supabase.from("produtos").select("*").order("data_entrada", { ascending: false });
@@ -243,7 +246,8 @@ export default function ProdutosPage() {
                 {produtos.map((p, index) => (
                   <tr
                     key={p.id}
-                    className={`border-b ${index % 2 === 0 ? 'bg-green-50' : 'bg-white'}`}
+                    className={`border-b ${index % 2 === 0 ? 'bg-green-50' : 'bg-white'} ${!p.vendido ? 'cursor-pointer hover:bg-yellow-100' : ''}`}
+                    onClick={() => !p.vendido && setProdutoParaVender(p.id)}
                   >
                     <td className="py-3 px-4 sm:px-6 text-black">{p.cod_produto || "-"}</td>
                     <td className="py-3 px-4 sm:px-6 text-black">{p.produto}</td>
@@ -265,6 +269,24 @@ export default function ProdutosPage() {
             </table>
           </div>
         </div>
+
+        {produtoParaVender && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-2 sm:p-4">
+            <div className="w-full max-w-2xl max-h-[90vh] rounded-lg bg-white p-4 sm:p-6 shadow-lg overflow-y-auto">
+              <div className="mb-4 flex items-center justify-between sticky top-0 bg-white">
+                <h3 className="text-lg sm:text-xl font-semibold text-black">Registrar Venda</h3>
+                <button onClick={() => setProdutoParaVender(null)} className="text-black hover:text-gray-700 text-2xl">✕</button>
+              </div>
+              <SalesForm 
+                initialProdutoId={produtoParaVender}
+                onCreated={() => {
+                  setProdutoParaVender(null);
+                  handleProductCreated();
+                }}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </ProtectedRoute>
   );

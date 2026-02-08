@@ -10,7 +10,7 @@ type ParcelaForm = {
   data_recebimento: string;
 };
 
-export function SalesForm({ onCreated }: { onCreated?: () => void }) {
+export function SalesForm({ onCreated, initialProdutoId }: { onCreated?: () => void; initialProdutoId?: string }) {
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [produtos, setProdutos] = useState<Produto[]>([]);
@@ -29,20 +29,39 @@ export function SalesForm({ onCreated }: { onCreated?: () => void }) {
   ]);
 
   useEffect(() => {
-    (async () => {
+    const loadData = async () => {
       const { data: fData } = await supabase.from("fornecedores").select("*").order("nome");
       const { data: cData } = await supabase.from("clientes").select("*").order("cliente_nome");
       setFornecedores(fData || []);
       setClientes(cData || []);
-    })();
+    };
+    loadData();
   }, []);
+
+  useEffect(() => {
+    if (!initialProdutoId) return;
+    
+    const loadInitialProduto = async () => {
+      const { data: produtoData } = await supabase
+        .from("produtos")
+        .select("*")
+        .eq("id", initialProdutoId)
+        .single();
+      
+      if (produtoData) {
+        setSelectedFornecedor(produtoData.fornecedor_id);
+        setSelectedProduto(initialProdutoId);
+      }
+    };
+    loadInitialProduto();
+  }, [initialProdutoId]);
 
   useEffect(() => {
     if (!selectedFornecedor) {
       setProdutos([]);
       return;
     }
-    (async () => {
+    const loadProdutos = async () => {
       const { data: pData } = await supabase
         .from("produtos")
         .select("*")
@@ -50,13 +69,16 @@ export function SalesForm({ onCreated }: { onCreated?: () => void }) {
         .eq("vendido", false)
         .order("data_entrada", { ascending: false });
       setProdutos(pData || []);
-      setSelectedProduto("");
-      setSelectedCliente("");
-      setForm({ valor_venda: "", data_venda: "" });
-      setQuantidadeParcelas(1);
-      setParcelas([{ valor_parcela: "", data_recebimento: "" }]);
-    })();
-  }, [supabase, selectedFornecedor]);
+      if (!initialProdutoId) {
+        setSelectedProduto("");
+        setSelectedCliente("");
+        setForm({ valor_venda: "", data_venda: "" });
+        setQuantidadeParcelas(1);
+        setParcelas([{ valor_parcela: "", data_recebimento: "" }]);
+      }
+    };
+    loadProdutos();
+  }, [selectedFornecedor, initialProdutoId]);
 
   useEffect(() => {
     // Atualiza o array de parcelas quando a quantidade muda
@@ -112,7 +134,7 @@ export function SalesForm({ onCreated }: { onCreated?: () => void }) {
           cliente_id: selectedCliente,
           valor_venda: parseFloat(form.valor_venda),
           data_venda: form.data_venda,
-          quantidade_parcelas: quantidadeParcelas,
+          quantidade_parcelas: quantidadeParcelas, 
         })
         .eq("id", selectedProduto);
 
@@ -121,7 +143,9 @@ export function SalesForm({ onCreated }: { onCreated?: () => void }) {
       // 2. Inserir as parcelas na tabela parcelas
       const parcelasInsert = parcelas.map((parcela, index) => ({
         produto_id: selectedProduto,
-        numero_parcela: index + 1,
+        fornecedor_id: selectedFornecedor,
+        cliente_id: selectedCliente,
+        numero_parcela: index + 1, 
         valor_parcela: parseFloat(parcela.valor_parcela),
         data_recebimento: parcela.data_recebimento,
         recebido: false,

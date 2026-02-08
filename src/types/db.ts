@@ -35,7 +35,9 @@ export type Produto = {
 export type Parcela = {
   id: string;
   produto_id: string;
-  numero_parcela: number;
+  fornecedor_id?: string | null;
+  cliente_id?: string | null;
+  numero_parcela?: number | null; // Opcional até adicionar no Supabase
   valor_parcela: number;
   data_recebimento: string; // ISO date
   recebido: boolean;
