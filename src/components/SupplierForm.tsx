@@ -5,7 +5,7 @@ import { useState } from "react";
 import { supabase } from "@/lib/supabase.server";
 
 export function SupplierForm({ onCreated }: { onCreated?: () => void }) {
-  const [form, setForm] = useState({ nome: "", cpf_cnpj: "", telefone: "", email: "" });
+  const [form, setForm] = useState({ nome: "", cpf_cnpj: "", cod_fornecedor: "", telefone: "", email: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -13,17 +13,17 @@ export function SupplierForm({ onCreated }: { onCreated?: () => void }) {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const { nome, cpf_cnpj, telefone, email } = form;
+    const { nome, cpf_cnpj, cod_fornecedor, telefone, email } = form;
     if (!nome || !cpf_cnpj) {
       setError("Nome e CPF/CNPJ são obrigatórios.");
       setLoading(false);
       return;
     }
-    const { error } = await supabase.from("fornecedores").insert({ nome, cpf_cnpj, telefone, email });
+    const { error } = await supabase.from("fornecedores").insert({ nome, cpf_cnpj, cod_fornecedor, telefone, email });
     if (error) {
       setError(error.message);
     } else {
-      setForm({ nome: "", cpf_cnpj: "", telefone: "", email: "" });
+      setForm({ nome: "", cpf_cnpj: "", cod_fornecedor: "", telefone: "", email: "" });
       onCreated?.();
     }
     setLoading(false);
@@ -55,6 +55,17 @@ export function SupplierForm({ onCreated }: { onCreated?: () => void }) {
           />
         </div>
         <div>
+          <label className="block text-xs sm:text-sm font-medium text-black">Codigo</label>
+          <input
+            type="text"
+            name="cod_fornecedor"
+            value={form.cod_fornecedor}
+            onChange={(e) => setForm((f) => ({ ...f, cod_fornecedor: e.target.value }))}
+            className="mt-1 w-full rounded-md border px-3 py-2 text-black"
+            placeholder="0000"
+          />
+        </div>
+        <div>
           <label className="block text-xs sm:text-sm font-medium text-black">Telefone</label>
           <input
             type="tel"
@@ -65,6 +76,7 @@ export function SupplierForm({ onCreated }: { onCreated?: () => void }) {
             placeholder="(00) 00000-0000"
           />
         </div>
+        
         <div>
           <label className="block text-xs sm:text-sm font-medium text-black">Email</label>
           <input

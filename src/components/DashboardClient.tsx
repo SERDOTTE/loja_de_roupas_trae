@@ -149,6 +149,7 @@ export default function DashboardClient() {
         <h2 className="text-base sm:text-lg font-semibold text-black">Ações rápidas</h2>
         <div className="mt-4 flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3">
           <a href="/fornecedores" className="inline-flex items-center justify-center rounded-md bg-blue-600 px-3 sm:px-4 py-2 text-xs sm:text-sm text-white hover:bg-blue-700">Cadastrar Fornecedor</a>
+          <a href="/clientes" className="inline-flex items-center justify-center rounded-md bg-teal-600 px-3 sm:px-4 py-2 text-xs sm:text-sm text-white hover:bg-teal-700">Cadastrar Cliente</a>
           <a href="/produtos" className="inline-flex items-center justify-center rounded-md bg-green-600 px-3 sm:px-4 py-2 text-xs sm:text-sm text-white hover:bg-green-700">Cadastrar Produto</a>
           <button onClick={() => setShowSalesModal(true)} className="inline-flex items-center justify-center rounded-md bg-purple-600 px-3 sm:px-4 py-2 text-xs sm:text-sm text-white hover:bg-purple-700">Cadastrar Venda</button>
         </div>

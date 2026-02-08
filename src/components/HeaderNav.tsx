@@ -29,6 +29,7 @@ export function HeaderNav() {
           <div className="flex flex-col md:flex-row gap-4 md:gap-6">
             <Link href="/" className="text-sm text-black hover:text-blue-600">Dashboard</Link>
             <Link href="/fornecedores" className="text-sm text-black hover:text-blue-600">Fornecedores</Link>
+            <Link href="/clientes" className="text-sm text-black hover:text-blue-600">Clientes</Link>
             <Link href="/produtos" className="text-sm text-black hover:text-blue-600">Produtos</Link>
           </div>
           

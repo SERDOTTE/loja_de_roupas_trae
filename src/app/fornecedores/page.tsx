@@ -43,6 +43,7 @@ export default function FornecedoresPage() {
             <table className="min-w-full text-xs sm:text-sm">
               <thead>
                 <tr className="text-left bg-gray-50 border-b-2 border-gray-200">
+                  <th className="py-3 px-4 sm:px-6 text-black font-semibold">Codigo</th>
                   <th className="py-3 px-4 sm:px-6 text-black font-semibold">Nome</th>
                   <th className="py-3 px-4 sm:px-6 text-black font-semibold">CPF/CNPJ</th>
                   <th className="py-3 px-4 sm:px-6 text-black font-semibold">Telefone</th>
@@ -52,6 +53,7 @@ export default function FornecedoresPage() {
               <tbody>
                 {fornecedores.map((f, index) => (
                   <tr key={f.id} className={`border-b ${index % 2 === 0 ? 'bg-blue-50' : 'bg-white'} hover:bg-blue-100 transition-colors`}>
+                    <td className="py-3 px-4 sm:px-6 text-black">{f.cod_fornecedor}</td>
                     <td className="py-3 px-4 sm:px-6 text-black">{f.nome}</td>
                     <td className="py-3 px-4 sm:px-6 text-black">{f.cpf_cnpj}</td>
                     <td className="py-3 px-4 sm:px-6 text-black">{f.telefone}</td>
@@ -60,7 +62,7 @@ export default function FornecedoresPage() {
                 ))}
                 {fornecedores.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="py-4 px-4 sm:px-6 text-center text-black">Nenhum fornecedor cadastrado.</td>
+                    <td colSpan={5} className="py-4 px-4 sm:px-6 text-center text-black">Nenhum fornecedor cadastrado.</td>
                   </tr>
                 )}
               </tbody>
