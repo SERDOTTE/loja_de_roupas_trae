@@ -16,31 +16,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Só executa no cliente (evita erros de SSR)
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
+
     // Verificar usuário atual
     (async () => {
-      const {
-        data: { user: currentUser },
-      } = await supabase.auth.getUser();
-      setUser(currentUser);
-      setLoading(false);
+      try {
+        const {
+          data: { user: currentUser },
+        } = await supabase.auth.getUser();
+        setUser(currentUser);
+      } catch (error) {
+        console.error("Erro ao obter usuário:", error);
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
     })();
 
     // Escutar mudanças de autenticação
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange((event: string, session: any) => {
       setUser(session?.user ?? null);
     });
 
     return () => {
       subscription?.unsubscribe();
     };
-  }, [supabase]);
+  }, []);
 
   const logout = async () => {
     if (!supabase) return;
-    await supabase.auth.signOut();
-    setUser(null);
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error);
+    }
   };
 
   return (

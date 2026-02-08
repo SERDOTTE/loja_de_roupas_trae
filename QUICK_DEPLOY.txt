@@ -1,0 +1,47 @@
+# ⚡ Quick Deploy Checklist
+
+## 1️⃣ Supabase Setup (5 min)
+- [ ] Acesso https://supabase.com/dashboard
+- [ ] Novo Projeto criado
+- [ ] Settings → API → URLs copiadas
+- [ ] `.env.local` atualizado com:
+  ```
+  NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
+  NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+  ```
+- [ ] `npm run dev` testado localmente
+
+## 2️⃣ Vercel Configuration (3 min)
+- [ ] https://vercel.com/dashboard → seu projeto
+- [ ] Settings → Environment Variables
+- [ ] Variável 1:
+  ```
+  Name: NEXT_PUBLIC_SUPABASE_URL
+  Value: https://xxxxx.supabase.co
+  ```
+- [ ] Variável 2:
+  ```
+  Name: NEXT_PUBLIC_SUPABASE_ANON_KEY
+  Value: sua_chave_pública
+  ```
+- [ ] **Save** clicado
+
+## 3️⃣ Build Validation (1 min)
+- [ ] Localmente: `npm run build` → ✅ Success
+- [ ] Se passou, está pronto!
+
+## 4️⃣ Redeploy (2 min)
+- [ ] Vercel → Deployments
+- [ ] Último deploy com erro (⚠️)
+- [ ] **Redeploy**
+- [ ] ⬜ Desmarque "Use existing build cache"
+- [ ] **Redeploy** confirmado
+
+## 5️⃣ Validação Final (30 seg)
+- [ ] Build passou ✅
+- [ ] Acesse a URL do seu app
+- [ ] Teste login
+
+---
+
+**Tempo Total:** ~10 minutos ⏱️

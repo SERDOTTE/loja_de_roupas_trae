@@ -15,10 +15,16 @@ export default function LoginPage() {
   useEffect(() => {
     console.log("URL Supabase:", process.env.NEXT_PUBLIC_SUPABASE_URL);
     console.log("Key existe:", !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+    console.log("Supabase client disponível:", !!supabase);
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!supabase) {
+      setError("Supabase não está configurado. Verifique as variáveis de ambiente.");
+      return;
+    }
 
     if (!email || !password) {
       setError("Preencha email e senha");
@@ -28,16 +34,22 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
-    const { error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (authError) {
-      setError(authError.message);
+      if (authError) {
+        setError(authError.message);
+      } else {
+        router.push("/");
+      }
+    } catch (err) {
+      setError("Erro ao conectar com o servidor. Tente novamente.");
+      console.error("Erro de login:", err);
+    } finally {
       setLoading(false);
-    } else {
-      router.push("/");
     }
   };
 
