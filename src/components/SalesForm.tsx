@@ -14,6 +14,7 @@ export function SalesForm({ onCreated, initialProdutoId }: { onCreated?: () => v
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [produtoInicial, setProdutoInicial] = useState<Produto | null>(null);
   const [selectedFornecedor, setSelectedFornecedor] = useState("");
   const [selectedProduto, setSelectedProduto] = useState("");
   const [selectedCliente, setSelectedCliente] = useState("");
@@ -27,6 +28,15 @@ export function SalesForm({ onCreated, initialProdutoId }: { onCreated?: () => v
   const [parcelas, setParcelas] = useState<ParcelaForm[]>([
     { valor_parcela: "", data_recebimento: "" },
   ]);
+  const [showNewClienteModal, setShowNewClienteModal] = useState(false);
+  const [newClienteForm, setNewClienteForm] = useState({
+    cliente_nome: "",
+    cliente_cpf_cnpj: "",
+    cliente_fone: "",
+    cliente_email: "",
+  });
+  const [loadingNewCliente, setLoadingNewCliente] = useState(false);
+  const showProductPicker = !initialProdutoId;
 
   useEffect(() => {
     const loadData = async () => {
@@ -49,8 +59,31 @@ export function SalesForm({ onCreated, initialProdutoId }: { onCreated?: () => v
         .single();
       
       if (produtoData) {
+        setProdutoInicial(produtoData);
         setSelectedFornecedor(produtoData.fornecedor_id);
         setSelectedProduto(initialProdutoId);
+        setSelectedCliente(produtoData.cliente_id || "");
+        setForm({
+          valor_venda: produtoData.valor_venda?.toString() || "",
+          data_venda: produtoData.data_venda || "",
+        });
+        setQuantidadeParcelas(produtoData.quantidade_parcelas || 1);
+
+        const { data: parcelasData } = await supabase
+          .from("parcelas")
+          .select("valor_parcela, data_recebimento, numero_parcela")
+          .eq("produto_id", initialProdutoId)
+          .order("numero_parcela", { ascending: true });
+
+        if (parcelasData && parcelasData.length > 0) {
+          setParcelas(
+            parcelasData.map((parcela: { valor_parcela: number | null; data_recebimento: string | null }) => ({
+              valor_parcela: parcela.valor_parcela?.toString() || "",
+              data_recebimento: parcela.data_recebimento || "",
+            }))
+          );
+          setQuantidadeParcelas(parcelasData.length);
+        }
       }
     };
     loadInitialProduto();
@@ -140,7 +173,14 @@ export function SalesForm({ onCreated, initialProdutoId }: { onCreated?: () => v
 
       if (updateError) throw updateError;
 
-      // 2. Inserir as parcelas na tabela parcelas
+      // 2. Remover parcelas existentes e inserir as novas
+      const { error: deleteError } = await supabase
+        .from("parcelas")
+        .delete()
+        .eq("produto_id", selectedProduto);
+
+      if (deleteError) throw deleteError;
+
       const parcelasInsert = parcelas.map((parcela, index) => ({
         produto_id: selectedProduto,
         fornecedor_id: selectedFornecedor,
@@ -161,6 +201,7 @@ export function SalesForm({ onCreated, initialProdutoId }: { onCreated?: () => v
       setSelectedFornecedor("");
       setSelectedProduto("");
       setSelectedCliente("");
+      setProdutoInicial(null);
       setForm({ valor_venda: "", data_venda: "" });
       setQuantidadeParcelas(1);
       setParcelas([{ valor_parcela: "", data_recebimento: "" }]);
@@ -172,7 +213,52 @@ export function SalesForm({ onCreated, initialProdutoId }: { onCreated?: () => v
     setLoading(false);
   }
 
-  const selectedProductData = produtos.find((p) => p.id === selectedProduto);
+  const selectedProductData = produtos.find((p) => p.id === selectedProduto) ||
+    (produtoInicial && produtoInicial.id === selectedProduto ? produtoInicial : undefined);
+
+  const handleCreateCliente = async (e?: React.FormEvent | React.MouseEvent) => {
+    if (e) e.preventDefault?.();
+    const { cliente_nome, cliente_cpf_cnpj, cliente_fone, cliente_email } = newClienteForm;
+    
+    if (!cliente_nome) {
+      setError("Nome do cliente é obrigatório.");
+      return;
+    }
+
+    setLoadingNewCliente(true);
+    setError(null);
+
+    try {
+      const { data: newCliente, error: insertError } = await supabase
+        .from("clientes")
+        .insert([
+          {
+            cliente_nome,
+            cliente_cpf_cnpj: cliente_cpf_cnpj || null,
+            cliente_fone: cliente_fone || null,
+            cliente_email: cliente_email || null,
+          },
+        ])
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      setClientes([...clientes, newCliente]);
+      setSelectedCliente(newCliente.id);
+      
+      setNewClienteForm({
+        cliente_nome: "",
+        cliente_cpf_cnpj: "",
+        cliente_fone: "",
+        cliente_email: "",
+      });
+      setShowNewClienteModal(false);
+    } catch (err: any) {
+      setError(err.message || "Erro ao criar cliente");
+    }
+    setLoadingNewCliente(false);
+  };
 
   return (
     <form className="space-y-4" onSubmit={onSubmit}>
@@ -192,7 +278,7 @@ export function SalesForm({ onCreated, initialProdutoId }: { onCreated?: () => v
         </select>
       </div>
 
-      {selectedFornecedor && (
+      {showProductPicker && selectedFornecedor && (
         <div>
           <label className="block text-xs sm:text-sm font-medium text-black mb-2">Produtos não vendidos</label>
           {produtos.length === 0 ? (
@@ -248,18 +334,27 @@ export function SalesForm({ onCreated, initialProdutoId }: { onCreated?: () => v
 
           <div className="pt-4 border-t">
             <label className="block text-xs sm:text-sm font-medium text-black mb-2">Cliente *</label>
-            <select
-              className="w-full rounded-md border px-3 py-2 text-black"
-              value={selectedCliente}
-              onChange={(e) => setSelectedCliente(e.target.value)}
-            >
-              <option value="">Selecione um cliente</option>
-              {clientes.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.cliente_nome}
-                </option>
-              ))}
-            </select>
+            <div className="flex gap-2">
+              <select
+                className="flex-1 rounded-md border px-3 py-2 text-black"
+                value={selectedCliente}
+                onChange={(e) => setSelectedCliente(e.target.value)}
+              >
+                <option value="">Selecione um cliente</option>
+                {clientes.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.cliente_nome}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => setShowNewClienteModal(true)}
+                className="rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 whitespace-nowrap"
+              >
+                + Cliente
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
@@ -343,6 +438,82 @@ export function SalesForm({ onCreated, initialProdutoId }: { onCreated?: () => v
           {loading ? "Salvando..." : "Registrar Venda"}
         </button>
       </div>
+
+      {showNewClienteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-2 sm:p-4">
+          <div className="w-full max-w-md rounded-lg bg-white p-4 sm:p-6 shadow-lg">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg sm:text-xl font-semibold text-black">Cadastrar Cliente</h3>
+              <button
+                onClick={() => setShowNewClienteModal(false)}
+                className="text-black hover:text-gray-700 text-2xl"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-black mb-2">Nome *</label>
+                <input
+                  type="text"
+                  className="w-full rounded-md border px-3 py-2 text-black"
+                  placeholder="Nome do cliente"
+                  value={newClienteForm.cliente_nome}
+                  onChange={(e) => setNewClienteForm((f) => ({ ...f, cliente_nome: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-black mb-2">CPF/CNPJ</label>
+                <input
+                  type="text"
+                  className="w-full rounded-md border px-3 py-2 text-black"
+                  placeholder="CPF ou CNPJ"
+                  value={newClienteForm.cliente_cpf_cnpj}
+                  onChange={(e) => setNewClienteForm((f) => ({ ...f, cliente_cpf_cnpj: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-black mb-2">Telefone</label>
+                <input
+                  type="text"
+                  className="w-full rounded-md border px-3 py-2 text-black"
+                  placeholder="Telefone"
+                  value={newClienteForm.cliente_fone}
+                  onChange={(e) => setNewClienteForm((f) => ({ ...f, cliente_fone: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-black mb-2">Email</label>
+                <input
+                  type="email"
+                  className="w-full rounded-md border px-3 py-2 text-black"
+                  placeholder="Email"
+                  value={newClienteForm.cliente_email}
+                  onChange={(e) => setNewClienteForm((f) => ({ ...f, cliente_email: e.target.value }))}
+                />
+              </div>
+              <div className="flex gap-2 pt-4">
+                <button
+                  type="button"
+                  disabled={loadingNewCliente}
+                  onClick={handleCreateCliente}
+                  className="flex-1 rounded-md bg-green-600 px-4 py-2 text-sm text-white hover:bg-green-700 disabled:opacity-60"
+                >
+                  {loadingNewCliente ? "Salvando..." : "Salvar Cliente"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowNewClienteModal(false)}
+                  className="flex-1 rounded-md bg-gray-600 px-4 py-2 text-sm text-white hover:bg-gray-700"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 }

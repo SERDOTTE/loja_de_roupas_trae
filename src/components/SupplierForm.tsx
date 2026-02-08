@@ -4,7 +4,15 @@ import { Fornecedor } from "@/types/db";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase.server";
 
-export function SupplierForm({ onCreated }: { onCreated?: () => void }) {
+export function SupplierForm({
+  onCreated,
+  onEditClick,
+  onDeleteClick,
+}: {
+  onCreated?: () => void;
+  onEditClick?: () => void;
+  onDeleteClick?: () => void;
+}) {
   const [form, setForm] = useState({ nome: "", cpf_cnpj: "", cod_fornecedor: "", telefone: "", email: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -90,9 +98,33 @@ export function SupplierForm({ onCreated }: { onCreated?: () => void }) {
         </div>
       </div>
       {error && <p className="text-xs sm:text-sm text-red-600">{error}</p>}
-      <button type="submit" disabled={loading} className="w-full sm:w-auto rounded-md bg-blue-600 px-4 py-2 text-sm sm:text-base text-white hover:bg-blue-700 disabled:opacity-60">
-        {loading ? "Salvando..." : "Salvar fornecedor"}
-      </button>
+      <div className="flex flex-col sm:flex-row gap-2">
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full sm:w-auto rounded-md bg-green-600 px-4 py-2 text-sm sm:text-base text-white hover:bg-green-700 disabled:opacity-60"
+        >
+          {loading ? "Salvando..." : "Salvar fornecedor"}
+        </button>
+        {onEditClick && (
+          <button
+            type="button"
+            onClick={onEditClick}
+            className="w-full sm:w-auto rounded-md bg-blue-600 px-4 py-2 text-sm sm:text-base text-white hover:bg-blue-700"
+          >
+            Editar fornecedor
+          </button>
+        )}
+        {onDeleteClick && (
+          <button
+            type="button"
+            onClick={onDeleteClick}
+            className="w-full sm:w-auto rounded-md bg-red-600 px-4 py-2 text-sm sm:text-base text-white hover:bg-red-700"
+          >
+            Deletar fornecedor
+          </button>
+        )}
+      </div>
     </form>
   );
 }

@@ -5,7 +5,15 @@ import { supabase } from "@/lib/supabase.server";
 import { Cliente } from "@/types/db";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
-function ClienteForm({ onCreated }: { onCreated?: () => void }) {
+function ClienteForm({
+  onCreated,
+  onEditClick,
+  onDeleteClick,
+}: {
+  onCreated?: () => void;
+  onEditClick?: () => void;
+  onDeleteClick?: () => void;
+}) {
   const [form, setForm] = useState({
     cliente_nome: "",
     cliente_cpf_cnpj: "",
@@ -90,9 +98,33 @@ function ClienteForm({ onCreated }: { onCreated?: () => void }) {
       </div>
 
       {error && <p className="text-xs sm:text-sm text-red-600">{error}</p>}
-      <button type="submit" disabled={loading} className="w-full sm:w-auto rounded-md bg-blue-600 px-4 py-2 text-sm sm:text-base text-white hover:bg-blue-700 disabled:opacity-60">
-        {loading ? "Salvando..." : "Salvar cliente"}
-      </button>
+      <div className="flex flex-col sm:flex-row gap-2">
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full sm:w-auto rounded-md bg-green-600 px-4 py-2 text-sm sm:text-base text-white hover:bg-green-700 disabled:opacity-60"
+        >
+          {loading ? "Salvando..." : "Salvar cliente"}
+        </button>
+        {onEditClick && (
+          <button
+            type="button"
+            onClick={onEditClick}
+            className="w-full sm:w-auto rounded-md bg-blue-600 px-4 py-2 text-sm sm:text-base text-white hover:bg-blue-700"
+          >
+            Editar cliente
+          </button>
+        )}
+        {onDeleteClick && (
+          <button
+            type="button"
+            onClick={onDeleteClick}
+            className="w-full sm:w-auto rounded-md bg-red-600 px-4 py-2 text-sm sm:text-base text-white hover:bg-red-700"
+          >
+            Excluir cliente
+          </button>
+        )}
+      </div>
     </form>
   );
 }
@@ -102,6 +134,12 @@ export default function ClientesPage() {
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<string>("");
   const [userEmail, setUserEmail] = useState<string>("");
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedClienteId, setSelectedClienteId] = useState<string>("");
+  const [editForm, setEditForm] = useState({ cliente_nome: "", cliente_cpf_cnpj: "", cliente_fone: "", cliente_email: "" });
+  const [loadingEdit, setLoadingEdit] = useState(false);
+  const [loadingDelete, setLoadingDelete] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -246,6 +284,77 @@ PRÓXIMOS PASSOS:
     }
   };
 
+  const loadEditForm = (clienteId: string) => {
+    const cliente = clientes.find((c) => c.id === clienteId);
+    if (!cliente) return;
+    setEditForm({
+      cliente_nome: cliente.cliente_nome || "",
+      cliente_cpf_cnpj: cliente.cliente_cpf_cnpj || "",
+      cliente_fone: cliente.cliente_fone || "",
+      cliente_email: cliente.cliente_email || "",
+    });
+  };
+
+  const handleEditClienteChange = (clienteId: string) => {
+    setSelectedClienteId(clienteId);
+    loadEditForm(clienteId);
+  };
+
+  async function onSaveCliente(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedClienteId) return;
+    setLoadingEdit(true);
+    setError(null);
+
+    const { cliente_nome, cliente_cpf_cnpj } = editForm;
+    if (!cliente_nome || !cliente_cpf_cnpj) {
+      setError("Nome e CPF/CNPJ são obrigatórios.");
+      setLoadingEdit(false);
+      return;
+    }
+
+    const payload = {
+      cliente_nome,
+      cliente_cpf_cnpj,
+      cliente_fone: editForm.cliente_fone || null,
+      cliente_email: editForm.cliente_email || null,
+    };
+
+    const { error } = await supabase
+      .from("clientes")
+      .update(payload)
+      .eq("id", selectedClienteId);
+
+    if (error) {
+      setError(error.message);
+    } else {
+      await loadClientes();
+      setShowEditModal(false);
+      setSelectedClienteId("");
+    }
+    setLoadingEdit(false);
+  }
+
+  async function onDeleteCliente() {
+    if (!selectedClienteId) return;
+    setLoadingDelete(true);
+    setError(null);
+
+    const { error } = await supabase
+      .from("clientes")
+      .delete()
+      .eq("id", selectedClienteId);
+
+    if (error) {
+      setError(error.message);
+    } else {
+      await loadClientes();
+      setShowDeleteModal(false);
+      setSelectedClienteId("");
+    }
+    setLoadingDelete(false);
+  }
+
   return (
     <ProtectedRoute>
       <div className="space-y-4 sm:space-y-6">
@@ -256,7 +365,11 @@ PRÓXIMOS PASSOS:
         <div className="rounded-lg border bg-white p-3 sm:p-4">
           <h3 className="text-base sm:text-lg font-medium text-black">Cadastrar cliente</h3>
           <div className="mt-4">
-            <ClienteForm onCreated={loadClientes} />
+            <ClienteForm
+              onCreated={loadClientes}
+              onEditClick={() => setShowEditModal(true)}
+              onDeleteClick={() => setShowDeleteModal(true)}
+            />
           </div>
         </div>
 
@@ -322,6 +435,122 @@ PRÓXIMOS PASSOS:
           </div>
         </div>
       </div>
+
+      {showEditModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-2 sm:p-4">
+          <div className="w-full max-w-xl rounded-lg bg-white p-4 sm:p-6 shadow-lg">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg sm:text-xl font-semibold text-black">Editar cliente</h3>
+              <button onClick={() => setShowEditModal(false)} className="text-black hover:text-gray-700 text-2xl">✕</button>
+            </div>
+
+            <form className="space-y-4" onSubmit={onSaveCliente}>
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-black">Cliente</label>
+                <select
+                  className="mt-1 w-full rounded-md border px-3 py-2 text-black"
+                  value={selectedClienteId}
+                  onChange={(e) => handleEditClienteChange(e.target.value)}
+                >
+                  <option value="">Selecione</option>
+                  {clientes.map((c) => (
+                    <option key={c.id} value={c.id}>{c.cliente_nome}</option>
+                  ))}
+                </select>
+              </div>
+
+              {selectedClienteId && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-black">Nome</label>
+                    <input
+                      type="text"
+                      className="mt-1 w-full rounded-md border px-3 py-2 text-black"
+                      value={editForm.cliente_nome}
+                      onChange={(e) => setEditForm((f) => ({ ...f, cliente_nome: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-black">CPF/CNPJ</label>
+                    <input
+                      type="text"
+                      className="mt-1 w-full rounded-md border px-3 py-2 text-black"
+                      value={editForm.cliente_cpf_cnpj}
+                      onChange={(e) => setEditForm((f) => ({ ...f, cliente_cpf_cnpj: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-black">Telefone</label>
+                    <input
+                      type="text"
+                      className="mt-1 w-full rounded-md border px-3 py-2 text-black"
+                      value={editForm.cliente_fone}
+                      onChange={(e) => setEditForm((f) => ({ ...f, cliente_fone: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-black">Email</label>
+                    <input
+                      type="email"
+                      className="mt-1 w-full rounded-md border px-3 py-2 text-black"
+                      value={editForm.cliente_email}
+                      onChange={(e) => setEditForm((f) => ({ ...f, cliente_email: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  disabled={!selectedClienteId || loadingEdit}
+                  className="rounded-md bg-emerald-600 px-4 py-2 text-sm text-white hover:bg-emerald-700 disabled:opacity-60"
+                >
+                  {loadingEdit ? "Salvando..." : "Salvar"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-2 sm:p-4">
+          <div className="w-full max-w-md rounded-lg bg-white p-4 sm:p-6 shadow-lg">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg sm:text-xl font-semibold text-black">Excluir cliente</h3>
+              <button onClick={() => setShowDeleteModal(false)} className="text-black hover:text-gray-700 text-2xl">✕</button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-black">Cliente</label>
+                <select
+                  className="mt-1 w-full rounded-md border px-3 py-2 text-black"
+                  value={selectedClienteId}
+                  onChange={(e) => setSelectedClienteId(e.target.value)}
+                >
+                  <option value="">Selecione</option>
+                  {clientes.map((c) => (
+                    <option key={c.id} value={c.id}>{c.cliente_nome}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  disabled={!selectedClienteId || loadingDelete}
+                  onClick={onDeleteCliente}
+                  className="rounded-md bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700 disabled:opacity-60"
+                >
+                  {loadingDelete ? "Excluindo..." : "Confirmar exclusao"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </ProtectedRoute>
   );
 }
