@@ -8,6 +8,7 @@ import { formatDateToBR } from "@/lib/dateUtils";
 type ParcelaForm = {
   valor_parcela: string;
   data_recebimento: string;
+  recebido: boolean;
 };
 
 export function SalesForm({ onCreated, initialProdutoId }: { onCreated?: () => void; initialProdutoId?: string }) {
@@ -26,7 +27,7 @@ export function SalesForm({ onCreated, initialProdutoId }: { onCreated?: () => v
     data_venda: "",
   });
   const [parcelas, setParcelas] = useState<ParcelaForm[]>([
-    { valor_parcela: "", data_recebimento: "" },
+    { valor_parcela: "", data_recebimento: "", recebido: false },
   ]);
   const [showNewClienteModal, setShowNewClienteModal] = useState(false);
   const [newClienteForm, setNewClienteForm] = useState({
@@ -71,15 +72,16 @@ export function SalesForm({ onCreated, initialProdutoId }: { onCreated?: () => v
 
         const { data: parcelasData } = await supabase
           .from("parcelas")
-          .select("valor_parcela, data_recebimento, numero_parcela")
+          .select("valor_parcela, data_recebimento, numero_parcela, recebido")
           .eq("produto_id", initialProdutoId)
           .order("numero_parcela", { ascending: true });
 
         if (parcelasData && parcelasData.length > 0) {
           setParcelas(
-            parcelasData.map((parcela: { valor_parcela: number | null; data_recebimento: string | null }) => ({
+            parcelasData.map((parcela: { valor_parcela: number | null; data_recebimento: string | null; recebido: boolean | null }) => ({
               valor_parcela: parcela.valor_parcela?.toString() || "",
               data_recebimento: parcela.data_recebimento || "",
+              recebido: parcela.recebido ?? false,
             }))
           );
           setQuantidadeParcelas(parcelasData.length);
@@ -100,14 +102,14 @@ export function SalesForm({ onCreated, initialProdutoId }: { onCreated?: () => v
         .select("*")
         .eq("fornecedor_id", selectedFornecedor)
         .eq("vendido", false)
-        .order("data_entrada", { ascending: false });
+        .order("cod_produto", { ascending: true, nullsFirst: false });
       setProdutos(pData || []);
       if (!initialProdutoId) {
         setSelectedProduto("");
         setSelectedCliente("");
         setForm({ valor_venda: "", data_venda: "" });
         setQuantidadeParcelas(1);
-        setParcelas([{ valor_parcela: "", data_recebimento: "" }]);
+        setParcelas([{ valor_parcela: "", data_recebimento: "", recebido: false }]);
       }
     };
     loadProdutos();
@@ -116,12 +118,12 @@ export function SalesForm({ onCreated, initialProdutoId }: { onCreated?: () => v
   useEffect(() => {
     // Atualiza o array de parcelas quando a quantidade muda
     const novasParcelas = Array.from({ length: quantidadeParcelas }, (_, i) => 
-      parcelas[i] || { valor_parcela: "", data_recebimento: "" }
+      parcelas[i] || { valor_parcela: "", data_recebimento: "", recebido: false }
     );
     setParcelas(novasParcelas);
   }, [quantidadeParcelas]);
 
-  const updateParcela = (index: number, field: keyof ParcelaForm, value: string) => {
+  const updateParcela = (index: number, field: keyof ParcelaForm, value: string | boolean) => {
     setParcelas(prev => {
       const newParcelas = [...prev];
       newParcelas[index] = { ...newParcelas[index], [field]: value };
@@ -188,7 +190,7 @@ export function SalesForm({ onCreated, initialProdutoId }: { onCreated?: () => v
         numero_parcela: index + 1, 
         valor_parcela: parseFloat(parcela.valor_parcela),
         data_recebimento: parcela.data_recebimento,
-        recebido: false,
+        recebido: parcela.recebido,
       }));
 
       const { error: parcelasError } = await supabase
@@ -204,7 +206,7 @@ export function SalesForm({ onCreated, initialProdutoId }: { onCreated?: () => v
       setProdutoInicial(null);
       setForm({ valor_venda: "", data_venda: "" });
       setQuantidadeParcelas(1);
-      setParcelas([{ valor_parcela: "", data_recebimento: "" }]);
+      setParcelas([{ valor_parcela: "", data_recebimento: "", recebido: false }]);
       onCreated?.();
     } catch (err: any) {
       setError(err.message || "Erro ao registrar venda");
@@ -414,12 +416,22 @@ export function SalesForm({ onCreated, initialProdutoId }: { onCreated?: () => v
                   </div>
                   <div>
                     <label className="block text-xs text-black">Data de recebimento *</label>
-                    <input
-                      type="date"
-                      className="mt-1 w-full rounded-md border px-3 py-2 text-black text-sm"
-                      value={parcelas[index]?.data_recebimento || ""}
-                      onChange={(e) => updateParcela(index, "data_recebimento", e.target.value)}
-                    />
+                    <div className="mt-1 flex items-center gap-3">
+                      <input
+                        type="date"
+                        className="w-full rounded-md border px-3 py-2 text-black text-sm"
+                        value={parcelas[index]?.data_recebimento || ""}
+                        onChange={(e) => updateParcela(index, "data_recebimento", e.target.value)}
+                      />
+                      <label className="flex items-center gap-2 text-xs text-black whitespace-nowrap">
+                        <input
+                          type="checkbox"
+                          checked={parcelas[index]?.recebido || false}
+                          onChange={(e) => updateParcela(index, "recebido", e.target.checked)}
+                        />
+                        Recebido
+                      </label>
+                    </div>
                   </div>
                 </div>
               </div>

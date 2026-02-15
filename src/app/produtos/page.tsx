@@ -319,7 +319,7 @@ export default function ProdutosPage() {
   const [loadingDeleteP, setLoadingDeleteP] = useState(false);
 
   const handleProductCreated = useCallback(async () => {
-    const { data: pData } = await supabase.from("produtos").select("*").order("data_entrada", { ascending: false });
+    const { data: pData } = await supabase.from("produtos").select("*").order("cod_produto", { ascending: true, nullsFirst: false });
     setProdutos(pData || []);
   }, []);
 
@@ -333,7 +333,7 @@ export default function ProdutosPage() {
         }
         setFornecedores(fData || []);
 
-        const { data: pData, error: pError } = await supabase.from("produtos").select("*").order("data_entrada", { ascending: false });
+        const { data: pData, error: pError } = await supabase.from("produtos").select("*").order("cod_produto", { ascending: true, nullsFirst: false });
         if (pError) {
           setError(`Erro ao carregar produtos: ${pError.message}`);
           return;
