@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase.server";
 import { SalesForm } from "./SalesForm";
 import { SalesListModal } from "./SalesListModal";
@@ -17,6 +17,42 @@ type ChartTooltip = {
   metricLabel: string;
   value: number;
   colorClass: string;
+};
+
+type AgendaSeriesItem = {
+  dateLabel: string;
+  dateKey: string | null;
+  sortValue: number;
+  total_total_parcelas: number;
+  total_parcelas_recebidas: number;
+};
+
+type AgendaTooltip = {
+  dateLabel: string;
+  metricLabel: string;
+  value: number;
+  colorClass: string;
+};
+
+type AgendaParcelaItem = {
+  id: string;
+  clienteNome: string;
+  produtoNome: string;
+  codProduto: string;
+  valorParcela: number;
+  dataRecebimento: string;
+  recebido: boolean;
+};
+
+type ProdutoLookup = {
+  id: string;
+  produto: string;
+  cod_produto?: string | null;
+};
+
+type ClienteLookup = {
+  id: string;
+  cliente_nome: string;
 };
 
 const MONTHS = [
@@ -69,12 +105,139 @@ function getMonthInfo(rawValue: unknown, index: number) {
   return { monthLabel: `Mês ${index + 1}`, monthSortValue: index + 1 };
 }
 
+function formatDateToDayMonthFullYear(isoDate: string) {
+  const [year, month, day] = isoDate.split("-");
+  if (!year || !month || !day) return isoDate;
+  return `${day}/${month}/${year}`;
+}
+
+function formatDateToFullYear(dateValue: string) {
+  const isoDatePrefix = dateValue.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoDatePrefix) {
+    const [, year, month, day] = isoDatePrefix;
+    return `${day}/${month}/${year}`;
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+    return formatDateToDayMonthFullYear(dateValue);
+  }
+
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateValue)) {
+    return dateValue;
+  }
+
+  if (/^\d{2}\/\d{2}$/.test(dateValue)) {
+    return `${dateValue}/${String(new Date().getFullYear())}`;
+  }
+
+  return dateValue;
+}
+
+function getAgendaDateInfo(rawValue: unknown, index: number) {
+  const rawText = String(rawValue ?? "").trim();
+
+  const isoDatePrefix = rawText.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (isoDatePrefix) {
+    const isoDate = isoDatePrefix[1];
+    const [year, month, day] = isoDate.split("-").map(Number);
+    return {
+      dateKey: isoDate,
+      sortValue: year * 10000 + month * 100 + day,
+    };
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(rawText)) {
+    const [year, month, day] = rawText.split("-").map(Number);
+    return {
+      dateKey: rawText,
+      sortValue: year * 10000 + month * 100 + day,
+    };
+  }
+
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(rawText)) {
+    const [day, month, year] = rawText.split("/").map(Number);
+    const isoDate = `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    return {
+      dateKey: isoDate,
+      sortValue: year * 10000 + month * 100 + day,
+    };
+  }
+
+  return {
+    dateKey: null,
+    sortValue: index + 1,
+  };
+}
+
+function formatAgendaDateLabel(rawValue: string) {
+  const rawText = rawValue.trim();
+
+  const isoDatePrefix = rawText.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoDatePrefix) {
+    const [, year, month, day] = isoDatePrefix;
+    return `${day}/${month}/${year}`;
+  }
+
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(rawText)) {
+    return rawText;
+  }
+
+  return rawText;
+}
+
+function getAgendaRawDateFromRow(row: Record<string, unknown>) {
+  const preferredKeys = [
+    "mes_inicio",
+    "mes_ano",
+    "ano_mes",
+    "competencia",
+    "data_recebimento",
+    "dia_mes",
+    "data",
+    "data_formatada",
+    "data_label",
+    "dt_recebimento",
+    "dt",
+  ];
+
+  for (const key of preferredKeys) {
+    const value = row[key];
+    if (value !== null && value !== undefined && String(value).trim() !== "") {
+      return { rawDate: String(value).trim(), keyUsed: key };
+    }
+  }
+
+  const dynamicDateKey = Object.keys(row).find((key) => {
+    if (/^total_/i.test(key) || /^valor_/i.test(key) || /parcelas/i.test(key)) return false;
+    return /(data|dia|dt_|mes_ano|ano_mes|mes_inicio|competencia)/i.test(key);
+  });
+
+  if (dynamicDateKey) {
+    const value = row[dynamicDateKey];
+    if (value !== null && value !== undefined && String(value).trim() !== "") {
+      return { rawDate: String(value).trim(), keyUsed: dynamicDateKey };
+    }
+  }
+
+  return { rawDate: "", keyUsed: null as string | null };
+}
+
 export default function DashboardClient() {
   const [produtos, setProdutos] = useState<any[]>([]);
   const [monthlySeries, setMonthlySeries] = useState<MonthlySeriesItem[]>([]);
   const [chartLoading, setChartLoading] = useState(false);
   const [chartError, setChartError] = useState<string | null>(null);
   const [chartTooltip, setChartTooltip] = useState<ChartTooltip | null>(null);
+  const [agendaSeries, setAgendaSeries] = useState<AgendaSeriesItem[]>([]);
+  const [agendaLoading, setAgendaLoading] = useState(false);
+  const [agendaError, setAgendaError] = useState<string | null>(null);
+  const [agendaTooltip, setAgendaTooltip] = useState<AgendaTooltip | null>(null);
+  const [selectedAgendaDateKey, setSelectedAgendaDateKey] = useState<string | null>(null);
+  const [selectedAgendaDateLabel, setSelectedAgendaDateLabel] = useState<string>("");
+  const [agendaParcelas, setAgendaParcelas] = useState<AgendaParcelaItem[]>([]);
+  const [agendaParcelasLoading, setAgendaParcelasLoading] = useState(false);
+  const [agendaParcelasError, setAgendaParcelasError] = useState<string | null>(null);
+  const [updatingParcelaId, setUpdatingParcelaId] = useState<string | null>(null);
   const [showSalesModal, setShowSalesModal] = useState(false);
   const [showSalesListModal, setShowSalesListModal] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
@@ -82,6 +245,105 @@ export default function DashboardClient() {
   const [currentMonth, setCurrentMonth] = useState<string>("");
 
   const meses = MONTHS.map((label, index) => ({ valor: index + 1, label }));
+
+  const loadAgendaSeries = useCallback(async () => {
+    setAgendaLoading(true);
+    setAgendaError(null);
+
+    const { data, error } = await supabase.from("vendas_parcelas_por_mes").select("*");
+    if (error) {
+      setAgendaError(`Erro ao carregar agenda: ${error.message}`);
+      setAgendaSeries([]);
+      setAgendaLoading(false);
+      return;
+    }
+
+    const parsed: AgendaSeriesItem[] = (data || []).map((row: Record<string, unknown>, index: number) => {
+      const { rawDate } = getAgendaRawDateFromRow(row);
+      const dateLabel = formatAgendaDateLabel(rawDate);
+      
+      const info = getAgendaDateInfo(rawDate, index);
+
+      return {
+        dateLabel,
+      dateKey: info.dateKey,
+      sortValue: info.sortValue,
+      total_total_parcelas: toNumber(row.total_total_parcelas),
+      total_parcelas_recebidas: toNumber(row.total_parcelas_recebidas),
+    };
+    });
+
+    parsed.sort((a, b) => a.sortValue - b.sortValue);
+    setAgendaSeries(parsed);
+    setAgendaLoading(false);
+  }, []);
+
+  const loadAgendaParcelasByDate = useCallback(async (dateKey: string, dateLabel: string) => {
+    setSelectedAgendaDateKey(dateKey);
+    setSelectedAgendaDateLabel(dateLabel);
+    setAgendaParcelasLoading(true);
+    setAgendaParcelasError(null);
+
+    const { data: parcelasData, error: parcelasError } = await supabase
+      .from("parcelas")
+      .select("id, produto_id, cliente_id, valor_parcela, data_recebimento, recebido")
+      .eq("data_recebimento", dateKey)
+      .order("created_at", { ascending: true });
+
+    if (parcelasError) {
+      setAgendaParcelasError(`Erro ao carregar parcelas: ${parcelasError.message}`);
+      setAgendaParcelas([]);
+      setAgendaParcelasLoading(false);
+      return;
+    }
+
+    const uniqueProdutoIds = Array.from(new Set((parcelasData || []).map((item: any) => item.produto_id).filter(Boolean)));
+    const uniqueClienteIds = Array.from(new Set((parcelasData || []).map((item: any) => item.cliente_id).filter(Boolean)));
+
+    const [{ data: produtosData }, { data: clientesData }] = await Promise.all([
+      uniqueProdutoIds.length > 0
+        ? supabase.from("produtos").select("id, produto, cod_produto").in("id", uniqueProdutoIds)
+        : Promise.resolve({ data: [] as ProdutoLookup[] }),
+      uniqueClienteIds.length > 0
+        ? supabase.from("clientes").select("id, cliente_nome").in("id", uniqueClienteIds)
+        : Promise.resolve({ data: [] as ClienteLookup[] }),
+    ]);
+
+    const produtosMap = new Map((produtosData as ProdutoLookup[] | null || []).map((p) => [p.id, p]));
+    const clientesMap = new Map((clientesData as ClienteLookup[] | null || []).map((c) => [c.id, c]));
+
+    const parsedParcelas: AgendaParcelaItem[] = (parcelasData || []).map((item: any) => {
+      const produto = produtosMap.get(item.produto_id);
+      const cliente = clientesMap.get(item.cliente_id);
+      return {
+        id: item.id,
+        clienteNome: cliente?.cliente_nome || "Cliente não informado",
+        produtoNome: produto?.produto || "Produto não informado",
+        codProduto: produto?.cod_produto || "-",
+        valorParcela: toNumber(item.valor_parcela),
+        dataRecebimento: formatDateToFullYear(item.data_recebimento),
+        recebido: Boolean(item.recebido),
+      };
+    });
+
+    setAgendaParcelas(parsedParcelas);
+    setAgendaParcelasLoading(false);
+  }, []);
+
+  const handleToggleRecebidoParcela = useCallback(async (parcelaId: string, recebido: boolean) => {
+    setUpdatingParcelaId(parcelaId);
+    const { error } = await supabase.from("parcelas").update({ recebido }).eq("id", parcelaId);
+
+    if (error) {
+      setAgendaParcelasError(`Erro ao atualizar parcela: ${error.message}`);
+      setUpdatingParcelaId(null);
+      return;
+    }
+
+    setAgendaParcelas((prev) => prev.map((item) => (item.id === parcelaId ? { ...item, recebido } : item)));
+    setUpdatingParcelaId(null);
+    await loadAgendaSeries();
+  }, [loadAgendaSeries]);
 
   useEffect(() => {
     (async () => {
@@ -115,6 +377,10 @@ export default function DashboardClient() {
       setChartLoading(false);
     })();
   }, []);
+
+  useEffect(() => {
+    loadAgendaSeries();
+  }, [loadAgendaSeries]);
 
   useEffect(() => {
     (async () => {
@@ -237,6 +503,59 @@ export default function DashboardClient() {
       pathLucro: buildPath((item) => item.lucro_total),
     };
   }, [monthlySeries]);
+
+  const agendaChartMetrics = useMemo(() => {
+    if (agendaSeries.length === 0) return null;
+
+    const maxY = Math.max(
+      ...agendaSeries.flatMap((item) => [item.total_total_parcelas, item.total_parcelas_recebidas]),
+      1
+    );
+
+    const width = Math.max(760, agendaSeries.length * 74);
+    const height = 320;
+    const padding = { top: 20, right: 20, bottom: 56, left: 84 };
+    const plotWidth = width - padding.left - padding.right;
+    const plotHeight = height - padding.top - padding.bottom;
+    const slot = plotWidth / agendaSeries.length;
+    const barWidth = Math.min(38, slot * 0.65);
+
+    const yForValue = (value: number) => padding.top + plotHeight - (value / maxY) * plotHeight;
+
+    const yTicks = Array.from({ length: 5 }, (_, i) => {
+      const value = (maxY / 4) * i;
+      return { value, y: yForValue(value) };
+    });
+
+    const bars = agendaSeries.map((item, index) => {
+      const centerX = padding.left + slot * index + slot / 2;
+      const x = centerX - barWidth / 2;
+      const baseHeight = (item.total_total_parcelas / maxY) * plotHeight;
+      const baseY = padding.top + plotHeight - baseHeight;
+      const receivedHeight = (item.total_parcelas_recebidas / maxY) * plotHeight;
+      const receivedY = padding.top + plotHeight - receivedHeight;
+      return {
+        ...item,
+        centerX,
+        x,
+        barWidth,
+        baseY,
+        baseHeight,
+        receivedY,
+        receivedHeight,
+      };
+    });
+
+    return {
+      width,
+      height,
+      padding,
+      slot,
+      plotHeight,
+      yTicks,
+      bars,
+    };
+  }, [agendaSeries]);
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -493,9 +812,186 @@ export default function DashboardClient() {
                   
                   setProdutos(data || []);
                 })();
+                loadAgendaSeries();
               }} />
             </div>
           </div>
+        )}
+      </div>
+
+      <div className="rounded-lg border bg-white p-3 sm:p-4 shadow-sm">
+        <h2 className="text-base sm:text-lg font-semibold text-black">Agenda de Recebimento</h2>
+
+        {agendaLoading ? (
+          <p className="mt-4 text-xs sm:text-sm text-black">Carregando agenda...</p>
+        ) : agendaError ? (
+          <p className="mt-4 text-xs sm:text-sm text-red-600">{agendaError}</p>
+        ) : !agendaChartMetrics ? (
+          <p className="mt-4 text-xs sm:text-sm text-black">Sem dados da agenda para exibir.</p>
+        ) : (
+          <>
+            <div className="mt-4 overflow-x-auto relative">
+              {agendaTooltip && (
+                <div className="absolute right-2 top-2 z-10 rounded-md border bg-white px-3 py-2 shadow-sm">
+                  <p className="text-xs font-semibold text-black">{agendaTooltip.dateLabel}</p>
+                  <p className="mt-1 inline-flex items-center gap-2 text-xs text-black">
+                    <span className={`h-2.5 w-2.5 rounded-full ${agendaTooltip.colorClass}`} />
+                    {agendaTooltip.metricLabel}: {formatCurrency(agendaTooltip.value)}
+                  </p>
+                </div>
+              )}
+
+              <svg
+                viewBox={`0 0 ${agendaChartMetrics.width} ${agendaChartMetrics.height}`}
+                className="w-full min-w-175"
+                role="img"
+                aria-label="Gráfico de colunas empilhadas da agenda de recebimento"
+              >
+                {agendaChartMetrics.yTicks.map((tick, index) => (
+                  <g key={`agenda-y-${index}`}>
+                    <line
+                      x1={agendaChartMetrics.padding.left}
+                      y1={tick.y}
+                      x2={agendaChartMetrics.width - agendaChartMetrics.padding.right}
+                      y2={tick.y}
+                      className="stroke-gray-200"
+                    />
+                    <text
+                      x={agendaChartMetrics.padding.left - 10}
+                      y={tick.y + 4}
+                      textAnchor="end"
+                      className="fill-black text-[10px]"
+                    >
+                      {formatCurrency(tick.value)}
+                    </text>
+                  </g>
+                ))}
+
+                {agendaChartMetrics.bars.map((bar, index) => (
+                  <g key={`agenda-bar-${index}`}>
+                    {selectedAgendaDateKey === bar.dateKey && (
+                      <rect
+                        x={bar.centerX - agendaChartMetrics.slot / 2}
+                        y={agendaChartMetrics.padding.top}
+                        width={agendaChartMetrics.slot}
+                        height={agendaChartMetrics.plotHeight}
+                        className="fill-blue-50"
+                      />
+                    )}
+
+                    <text
+                      x={bar.centerX}
+                      y={agendaChartMetrics.height - 20}
+                      textAnchor="middle"
+                      className="fill-black text-[10px]"
+                    >
+                      {bar.dateLabel}
+                    </text>
+
+                    <rect
+                      x={bar.x}
+                      y={bar.baseY}
+                      width={bar.barWidth}
+                      height={bar.baseHeight}
+                      className={`fill-yellow-400 cursor-pointer ${selectedAgendaDateKey === bar.dateKey ? "stroke-black stroke-2" : ""}`}
+                      onMouseEnter={() => setAgendaTooltip({
+                        dateLabel: bar.dateLabel,
+                        metricLabel: "PREVISÃO",
+                        value: bar.total_total_parcelas,
+                        colorClass: "bg-yellow-400",
+                      })}
+                      onMouseLeave={() => setAgendaTooltip(null)}
+                      onClick={() => {
+                        if (!bar.dateKey) return;
+                        loadAgendaParcelasByDate(bar.dateKey, bar.dateLabel);
+                      }}
+                    />
+
+                    <rect
+                      x={bar.x}
+                      y={bar.receivedY}
+                      width={bar.barWidth}
+                      height={bar.receivedHeight}
+                      className={`fill-blue-600 cursor-pointer ${selectedAgendaDateKey === bar.dateKey ? "stroke-black stroke-2" : ""}`}
+                      onMouseEnter={() => setAgendaTooltip({
+                        dateLabel: bar.dateLabel,
+                        metricLabel: "RECEBIDO",
+                        value: bar.total_parcelas_recebidas,
+                        colorClass: "bg-blue-600",
+                      })}
+                      onMouseLeave={() => setAgendaTooltip(null)}
+                      onClick={() => {
+                        if (!bar.dateKey) return;
+                        loadAgendaParcelasByDate(bar.dateKey, bar.dateLabel);
+                      }}
+                    />
+                  </g>
+                ))}
+              </svg>
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center gap-3 text-xs sm:text-sm">
+              <span className="inline-flex items-center gap-2 text-black">
+                <span className="h-2.5 w-2.5 rounded-full bg-yellow-400" />
+                PREVISÃO
+              </span>
+              <span className="inline-flex items-center gap-2 text-black">
+                <span className="h-2.5 w-2.5 rounded-full bg-blue-600" />
+                RECEBIDO
+              </span>
+            </div>
+
+            {selectedAgendaDateKey && (
+              <div className="mt-4 rounded-md border border-gray-200 p-3 sm:p-4">
+                <h3 className="text-sm sm:text-base font-semibold text-black">Lista de recebimentos - {selectedAgendaDateLabel}</h3>
+
+                {agendaParcelasError && <p className="mt-2 text-xs sm:text-sm text-red-600">{agendaParcelasError}</p>}
+
+                {agendaParcelasLoading ? (
+                  <p className="mt-3 text-xs sm:text-sm text-black">Carregando parcelas...</p>
+                ) : agendaParcelas.length === 0 ? (
+                  <p className="mt-3 text-xs sm:text-sm text-black">Nenhum item para esta data.</p>
+                ) : (
+                  <div className="mt-3 overflow-x-auto">
+                    <table className="min-w-full text-xs sm:text-sm">
+                      <thead>
+                        <tr className="text-left bg-gray-50 border-b border-gray-200">
+                          <th className="py-2 px-3 text-black">Cliente</th>
+                          <th className="py-2 px-3 text-black">Produto</th>
+                          <th className="py-2 px-3 text-black">Código</th>
+                          <th className="py-2 px-3 text-black">Valor</th>
+                          <th className="py-2 px-3 text-black">Recebimento</th>
+                          <th className="py-2 px-3 text-black">Recebido</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {agendaParcelas.map((item) => (
+                          <tr key={item.id} className="border-b border-gray-100">
+                            <td className="py-2 px-3 text-black">{item.clienteNome}</td>
+                            <td className="py-2 px-3 text-black">{item.produtoNome}</td>
+                            <td className="py-2 px-3 text-black">{item.codProduto}</td>
+                            <td className="py-2 px-3 text-black">{formatCurrency(item.valorParcela)}</td>
+                            <td className="py-2 px-3 text-black">{item.dataRecebimento}</td>
+                            <td className="py-2 px-3 text-black">
+                              <label className="inline-flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={item.recebido}
+                                  disabled={updatingParcelaId === item.id}
+                                  onChange={(e) => handleToggleRecebidoParcela(item.id, e.target.checked)}
+                                />
+                                <span>{item.recebido ? "Sim" : "Não"}</span>
+                              </label>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
 

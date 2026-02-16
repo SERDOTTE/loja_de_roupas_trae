@@ -5,16 +5,20 @@
  */
 export function formatDateToBR(dateStr: string | null | undefined): string {
   if (!dateStr) return "-";
-  
+
+  const rawText = String(dateStr).trim();
+
   // Se já estiver no formato dd/mm/yyyy, retorna como está
-  if (dateStr.includes("/")) return dateStr;
-  
-  try {
-    const [year, month, day] = dateStr.split("-");
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(rawText)) return rawText;
+
+  // Suporta yyyy-mm-dd e yyyy-mm-ddThh:mm:ss(.sss)
+  const isoDatePrefix = rawText.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoDatePrefix) {
+    const [, year, month, day] = isoDatePrefix;
     return `${day}/${month}/${year}`;
-  } catch {
-    return dateStr;
   }
+
+  return rawText;
 }
 
 /**
