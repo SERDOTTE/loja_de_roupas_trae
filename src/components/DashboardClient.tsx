@@ -37,6 +37,8 @@ type AgendaTooltip = {
 type AgendaParcelaItem = {
   id: string;
   clienteNome: string;
+  clienteTelefone: string;
+  clienteEmail: string;
   produtoNome: string;
   codProduto: string;
   valorParcela: number;
@@ -53,6 +55,8 @@ type ProdutoLookup = {
 type ClienteLookup = {
   id: string;
   cliente_nome: string;
+  cliente_fone?: string | null;
+  cliente_email?: string | null;
 };
 
 const MONTHS = [
@@ -222,6 +226,13 @@ function getAgendaRawDateFromRow(row: Record<string, unknown>) {
   return { rawDate: "", keyUsed: null as string | null };
 }
 
+function sortAgendaParcelas(items: AgendaParcelaItem[]) {
+  return [...items].sort((a, b) => {
+    if (a.recebido !== b.recebido) return a.recebido ? 1 : -1;
+    return a.clienteNome.localeCompare(b.clienteNome, "pt-BR", { sensitivity: "base" });
+  });
+}
+
 export default function DashboardClient() {
   const [produtos, setProdutos] = useState<any[]>([]);
   const [monthlySeries, setMonthlySeries] = useState<MonthlySeriesItem[]>([]);
@@ -237,6 +248,7 @@ export default function DashboardClient() {
   const [agendaParcelas, setAgendaParcelas] = useState<AgendaParcelaItem[]>([]);
   const [agendaParcelasLoading, setAgendaParcelasLoading] = useState(false);
   const [agendaParcelasError, setAgendaParcelasError] = useState<string | null>(null);
+  const [showAgendaParcelasModal, setShowAgendaParcelasModal] = useState(false);
   const [updatingParcelaId, setUpdatingParcelaId] = useState<string | null>(null);
   const [showSalesModal, setShowSalesModal] = useState(false);
   const [showSalesListModal, setShowSalesListModal] = useState(false);
@@ -284,14 +296,34 @@ export default function DashboardClient() {
     setAgendaParcelasLoading(true);
     setAgendaParcelasError(null);
 
-    const { data: parcelasData, error: parcelasError } = await supabase
+    const parcelasSelect = "id, produto_id, cliente_id, valor_parcela, data_recebimento, recebido";
+
+    let parcelasData: any[] | null = null;
+    let parcelasError: { message: string } | null = null;
+
+    const orderedByNumeroParcela = await supabase
       .from("parcelas")
-      .select("id, produto_id, cliente_id, valor_parcela, data_recebimento, recebido")
+      .select(parcelasSelect)
       .eq("data_recebimento", dateKey)
-      .order("created_at", { ascending: true });
+      .order("numero_parcela", { ascending: true });
+
+    parcelasData = orderedByNumeroParcela.data as any[] | null;
+    parcelasError = orderedByNumeroParcela.error;
+
+    if (parcelasError && /column\s+parcelas\.numero_parcela\s+does not exist/i.test(parcelasError.message)) {
+      const fallbackQuery = await supabase
+        .from("parcelas")
+        .select(parcelasSelect)
+        .eq("data_recebimento", dateKey);
+
+      parcelasData = fallbackQuery.data as any[] | null;
+      parcelasError = fallbackQuery.error;
+    }
 
     if (parcelasError) {
-      setAgendaParcelasError(`Erro ao carregar parcelas: ${parcelasError.message}`);
+      setAgendaParcelasError(
+        `Erro ao carregar parcelas: ${parcelasError.message} | Consulta: from(\"parcelas\").select(\"${parcelasSelect}\").eq(\"data_recebimento\", \"${dateKey}\")`
+      );
       setAgendaParcelas([]);
       setAgendaParcelasLoading(false);
       return;
@@ -305,7 +337,7 @@ export default function DashboardClient() {
         ? supabase.from("produtos").select("id, produto, cod_produto").in("id", uniqueProdutoIds)
         : Promise.resolve({ data: [] as ProdutoLookup[] }),
       uniqueClienteIds.length > 0
-        ? supabase.from("clientes").select("id, cliente_nome").in("id", uniqueClienteIds)
+        ? supabase.from("clientes").select("id, cliente_nome, cliente_fone, cliente_email").in("id", uniqueClienteIds)
         : Promise.resolve({ data: [] as ClienteLookup[] }),
     ]);
 
@@ -318,6 +350,8 @@ export default function DashboardClient() {
       return {
         id: item.id,
         clienteNome: cliente?.cliente_nome || "Cliente não informado",
+        clienteTelefone: cliente?.cliente_fone || "-",
+        clienteEmail: cliente?.cliente_email || "-",
         produtoNome: produto?.produto || "Produto não informado",
         codProduto: produto?.cod_produto || "-",
         valorParcela: toNumber(item.valor_parcela),
@@ -326,7 +360,7 @@ export default function DashboardClient() {
       };
     });
 
-    setAgendaParcelas(parsedParcelas);
+    setAgendaParcelas(sortAgendaParcelas(parsedParcelas));
     setAgendaParcelasLoading(false);
   }, []);
 
@@ -340,10 +374,19 @@ export default function DashboardClient() {
       return;
     }
 
-    setAgendaParcelas((prev) => prev.map((item) => (item.id === parcelaId ? { ...item, recebido } : item)));
+    setAgendaParcelas((prev) => {
+      const updated = prev.map((item) => (item.id === parcelaId ? { ...item, recebido } : item));
+      return sortAgendaParcelas(updated);
+    });
     setUpdatingParcelaId(null);
     await loadAgendaSeries();
   }, [loadAgendaSeries]);
+
+  const handleOpenAgendaParcelasModal = useCallback((dateKey: string | null, dateLabel: string) => {
+    if (!dateKey) return;
+    setShowAgendaParcelasModal(true);
+    loadAgendaParcelasByDate(dateKey, dateLabel);
+  }, [loadAgendaParcelasByDate]);
 
   useEffect(() => {
     (async () => {
@@ -902,8 +945,7 @@ export default function DashboardClient() {
                       })}
                       onMouseLeave={() => setAgendaTooltip(null)}
                       onClick={() => {
-                        if (!bar.dateKey) return;
-                        loadAgendaParcelasByDate(bar.dateKey, bar.dateLabel);
+                        handleOpenAgendaParcelasModal(bar.dateKey, bar.dateLabel);
                       }}
                     />
 
@@ -921,8 +963,7 @@ export default function DashboardClient() {
                       })}
                       onMouseLeave={() => setAgendaTooltip(null)}
                       onClick={() => {
-                        if (!bar.dateKey) return;
-                        loadAgendaParcelasByDate(bar.dateKey, bar.dateLabel);
+                        handleOpenAgendaParcelasModal(bar.dateKey, bar.dateLabel);
                       }}
                     />
                   </g>
@@ -941,59 +982,78 @@ export default function DashboardClient() {
               </span>
             </div>
 
-            {selectedAgendaDateKey && (
-              <div className="mt-4 rounded-md border border-gray-200 p-3 sm:p-4">
-                <h3 className="text-sm sm:text-base font-semibold text-black">Lista de recebimentos - {selectedAgendaDateLabel}</h3>
-
-                {agendaParcelasError && <p className="mt-2 text-xs sm:text-sm text-red-600">{agendaParcelasError}</p>}
-
-                {agendaParcelasLoading ? (
-                  <p className="mt-3 text-xs sm:text-sm text-black">Carregando parcelas...</p>
-                ) : agendaParcelas.length === 0 ? (
-                  <p className="mt-3 text-xs sm:text-sm text-black">Nenhum item para esta data.</p>
-                ) : (
-                  <div className="mt-3 overflow-x-auto">
-                    <table className="min-w-full text-xs sm:text-sm">
-                      <thead>
-                        <tr className="text-left bg-gray-50 border-b border-gray-200">
-                          <th className="py-2 px-3 text-black">Cliente</th>
-                          <th className="py-2 px-3 text-black">Produto</th>
-                          <th className="py-2 px-3 text-black">Código</th>
-                          <th className="py-2 px-3 text-black">Valor</th>
-                          <th className="py-2 px-3 text-black">Recebimento</th>
-                          <th className="py-2 px-3 text-black">Recebido</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {agendaParcelas.map((item) => (
-                          <tr key={item.id} className="border-b border-gray-100">
-                            <td className="py-2 px-3 text-black">{item.clienteNome}</td>
-                            <td className="py-2 px-3 text-black">{item.produtoNome}</td>
-                            <td className="py-2 px-3 text-black">{item.codProduto}</td>
-                            <td className="py-2 px-3 text-black">{formatCurrency(item.valorParcela)}</td>
-                            <td className="py-2 px-3 text-black">{item.dataRecebimento}</td>
-                            <td className="py-2 px-3 text-black">
-                              <label className="inline-flex items-center gap-2">
-                                <input
-                                  type="checkbox"
-                                  checked={item.recebido}
-                                  disabled={updatingParcelaId === item.id}
-                                  onChange={(e) => handleToggleRecebidoParcela(item.id, e.target.checked)}
-                                />
-                                <span>{item.recebido ? "Sim" : "Não"}</span>
-                              </label>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            )}
           </>
         )}
       </div>
+
+      {showAgendaParcelasModal && selectedAgendaDateKey && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-2 sm:p-4">
+          <div className="w-full max-w-5xl max-h-[90vh] rounded-lg bg-white p-4 sm:p-6 shadow-lg overflow-y-auto">
+            <div className="mb-4 flex items-center justify-between sticky top-0 bg-white">
+              <h3 className="text-lg sm:text-xl font-semibold text-black">Lista de recebimentos - {selectedAgendaDateLabel}</h3>
+              <button
+                onClick={() => setShowAgendaParcelasModal(false)}
+                className="text-black hover:text-gray-700 text-2xl"
+              >
+                ✕
+              </button>
+            </div>
+
+            {agendaParcelasError && <p className="mt-2 text-xs sm:text-sm text-red-600">{agendaParcelasError}</p>}
+
+            {agendaParcelasLoading ? (
+              <p className="mt-3 text-xs sm:text-sm text-black">Carregando parcelas...</p>
+            ) : agendaParcelas.length === 0 ? (
+              <p className="mt-3 text-xs sm:text-sm text-black">Nenhum item para esta data.</p>
+            ) : (
+              <div className="mt-3 overflow-x-auto">
+                <table className="min-w-full text-xs sm:text-sm">
+                  <thead>
+                    <tr className="text-left bg-gray-50 border-b border-gray-200">
+                      <th className="py-2 px-3 text-black">Cliente</th>
+                      <th className="py-2 px-3 text-black">Produto</th>
+                      <th className="py-2 px-3 text-black">Código</th>
+                      <th className="py-2 px-3 text-black">Valor</th>
+                      <th className="py-2 px-3 text-black">Recebimento</th>
+                      <th className="py-2 px-3 text-black">Recebido</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {agendaParcelas.map((item) => (
+                      <tr
+                        key={item.id}
+                        className={`border-b ${item.recebido ? "border-gray-100" : "border-amber-200 bg-amber-50"}`}
+                      >
+                        <td className="py-2 px-3 text-black">
+                          <div className="flex flex-col">
+                            <span>{item.clienteNome}</span>
+                            <span className="text-[11px] text-gray-600">Tel: {item.clienteTelefone} | E-mail: {item.clienteEmail}</span>
+                          </div>
+                        </td>
+                        <td className="py-2 px-3 text-black">{item.produtoNome}</td>
+                        <td className="py-2 px-3 text-black">{item.codProduto}</td>
+                        <td className="py-2 px-3 text-black">{formatCurrency(item.valorParcela)}</td>
+                        <td className="py-2 px-3 text-black">{item.dataRecebimento}</td>
+                        <td className="py-2 px-3 text-black">
+                          <label className="inline-flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={item.recebido}
+                              disabled={updatingParcelaId === item.id}
+                              onChange={(e) => handleToggleRecebidoParcela(item.id, e.target.checked)}
+                            />
+                            <span>{item.recebido ? "Sim" : "Não"}</span>
+                          </label>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {showSalesListModal && <SalesListModal onClose={() => setShowSalesListModal(false)} selectedMonth={selectedMonth} selectedYear={selectedYear} />}
     </div>
