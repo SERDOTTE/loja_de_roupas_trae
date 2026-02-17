@@ -31,6 +31,7 @@ export function HeaderNav() {
             <Link href="/fornecedores" className="text-sm text-black hover:text-blue-600">Fornecedores</Link>
             <Link href="/clientes" className="text-sm text-black hover:text-blue-600">Clientes</Link>
             <Link href="/produtos" className="text-sm text-black hover:text-blue-600">Produtos</Link>
+            <Link href="/?openSalesModal=1" className="text-sm text-black hover:text-blue-600">Cadastrar Venda</Link>
           </div>
           
           {/* User Info and Logout */}

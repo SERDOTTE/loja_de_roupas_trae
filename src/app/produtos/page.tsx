@@ -74,7 +74,7 @@ function ProductForm({
           >
             <option value="">Selecione</option>
             {fornecedores.map((f) => (
-              <option key={f.id} value={f.id}>{f.nome}</option>
+                <option key={f.id} value={f.id}>{f.cod_fornecedor ? `${f.cod_fornecedor} - ${f.nome}` : f.nome}</option>
             ))}
           </select>
         </div>
@@ -238,7 +238,7 @@ function ProductEditForm({
           >
             <option value="">Selecione</option>
             {fornecedores.map((f) => (
-              <option key={f.id} value={f.id}>{f.nome}</option>
+                <option key={f.id} value={f.id}>{f.cod_fornecedor ? `${f.cod_fornecedor} - ${f.nome}` : f.nome}</option>
             ))}
           </select>
         </div>
@@ -326,7 +326,10 @@ export default function ProdutosPage() {
   useEffect(() => {
     (async () => {
       try {
-        const { data: fData, error: fError } = await supabase.from("fornecedores").select("*").order("created_at", { ascending: false });
+        const { data: fData, error: fError } = await supabase
+          .from("fornecedores")
+          .select("*")
+          .order("cod_fornecedor", { ascending: true, nullsFirst: false });
         if (fError) {
           setError(`Erro ao carregar fornecedores: ${fError.message}`);
           return;
@@ -570,7 +573,7 @@ export default function ProdutosPage() {
                       >
                         <option value="">Selecione</option>
                         {fornecedores.map((f) => (
-                          <option key={f.id} value={f.id}>{f.nome}</option>
+                          <option key={f.id} value={f.id}>{f.cod_fornecedor ? `${f.cod_fornecedor} - ${f.nome}` : f.nome}</option>
                         ))}
                       </select>
                     </div>

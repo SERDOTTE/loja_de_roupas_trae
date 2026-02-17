@@ -41,7 +41,10 @@ export function SalesForm({ onCreated, initialProdutoId }: { onCreated?: () => v
 
   useEffect(() => {
     const loadData = async () => {
-      const { data: fData } = await supabase.from("fornecedores").select("*").order("nome");
+      const { data: fData } = await supabase
+        .from("fornecedores")
+        .select("*")
+        .order("cod_fornecedor", { ascending: true, nullsFirst: false });
       const { data: cData } = await supabase.from("clientes").select("*").order("cliente_nome");
       setFornecedores(fData || []);
       setClientes(cData || []);
@@ -274,7 +277,7 @@ export function SalesForm({ onCreated, initialProdutoId }: { onCreated?: () => v
           <option value="">Selecione um fornecedor</option>
           {fornecedores.map((f) => (
             <option key={f.id} value={f.id}>
-              {f.nome}
+              {f.cod_fornecedor ? `${f.cod_fornecedor} - ${f.nome}` : f.nome}
             </option>
           ))}
         </select>

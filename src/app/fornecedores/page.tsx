@@ -17,7 +17,10 @@ export default function FornecedoresPage() {
   const [loadingDelete, setLoadingDelete] = useState(false);
 
   async function loadFornecedores() {
-    const { data, error } = await supabase.from("fornecedores").select("*").order("created_at", { ascending: false });
+    const { data, error } = await supabase
+      .from("fornecedores")
+      .select("*")
+      .order("cod_fornecedor", { ascending: true, nullsFirst: false });
     if (error) setError(error.message);
     setFornecedores(data || []);
   }
@@ -160,7 +163,7 @@ export default function FornecedoresPage() {
                 >
                   <option value="">Selecione</option>
                   {fornecedores.map((f) => (
-                    <option key={f.id} value={f.id}>{f.nome}</option>
+                    <option key={f.id} value={f.id}>{f.cod_fornecedor ? `${f.cod_fornecedor} - ${f.nome}` : f.nome}</option>
                   ))}
                 </select>
               </div>
@@ -247,7 +250,7 @@ export default function FornecedoresPage() {
                 >
                   <option value="">Selecione</option>
                   {fornecedores.map((f) => (
-                    <option key={f.id} value={f.id}>{f.nome}</option>
+                    <option key={f.id} value={f.id}>{f.cod_fornecedor ? `${f.cod_fornecedor} - ${f.nome}` : f.nome}</option>
                   ))}
                 </select>
               </div>
