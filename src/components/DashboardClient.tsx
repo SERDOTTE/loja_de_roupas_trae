@@ -61,6 +61,35 @@ type ClienteLookup = {
   cliente_email?: string | null;
 };
 
+type SupplierPaymentSeriesItem = {
+  fornecedorLabel: string;
+  codFornecedor: string;
+  nomeFornecedor: string;
+  soma_valor_entrada_pg_true: number;
+  soma_valor_entrada_pg_null_or_false: number;
+  produtosDetalhe: SupplierPaymentProductDetail[];
+};
+
+type SupplierPaymentProductDetail = {
+  id: string;
+  cod_produto: string;
+  produto: string;
+  valor_entrada: number;
+  pg_fornecedor: boolean;
+  data_pg_fornecedor: string;
+  valor_entrada_pg_true: number;
+  valor_entrada_pg_null_or_false: number;
+};
+
+type SupplierPaymentTooltip = {
+  fornecedorLabel: string;
+  metricLabel: string;
+  value: number;
+  colorClass: string;
+};
+
+type SupplierPaymentSelectedMetric = "true" | "null_or_false";
+
 const MONTHS = [
   "Janeiro",
   "Fevereiro",
@@ -79,6 +108,36 @@ const MONTHS = [
 function toNumber(value: unknown) {
   const num = Number(value ?? 0);
   return Number.isFinite(num) ? num : 0;
+}
+
+function parseSupplierPaymentDetails(rawValue: unknown): SupplierPaymentProductDetail[] {
+  const parsed = Array.isArray(rawValue) ? rawValue : [];
+
+  return parsed.map((item: Record<string, unknown>, index: number) => {
+    const id = String(item.id ?? item.produto_id ?? `produto-${index}`);
+    const codProduto = String(
+      item.produto_codigo ?? item.cod_produto ?? item.codigo_produto ?? item.cod ?? "-"
+    );
+    const produto = String(
+      item.produto_nome ?? item.produto ?? item.nome_produto ?? "Produto sem nome"
+    );
+    const valorEntrada = toNumber(item.valor_entrada);
+    const pgFornecedor = Boolean(item.pg_fornecedor ?? item.entrada_pg ?? false);
+    const dataPgFornecedor = String(item.data_pg_fornecedor ?? "");
+    const valorEntradaPgTrue = toNumber(item.valor_entrada_pg_true);
+    const valorEntradaPgNullOrFalse = toNumber(item.valor_entrada_pg_null_or_false);
+
+    return {
+      id,
+      cod_produto: codProduto,
+      produto,
+      valor_entrada: valorEntrada,
+      pg_fornecedor: pgFornecedor,
+      data_pg_fornecedor: dataPgFornecedor,
+      valor_entrada_pg_true: valorEntradaPgTrue,
+      valor_entrada_pg_null_or_false: valorEntradaPgNullOrFalse,
+    };
+  });
 }
 
 function getMonthInfo(rawValue: unknown, index: number) {
@@ -259,6 +318,15 @@ export default function DashboardClient() {
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [currentMonth, setCurrentMonth] = useState<string>("");
+  const [supplierPaymentSeries, setSupplierPaymentSeries] = useState<SupplierPaymentSeriesItem[]>([]);
+  const [supplierPaymentLoading, setSupplierPaymentLoading] = useState(false);
+  const [supplierPaymentError, setSupplierPaymentError] = useState<string | null>(null);
+  const [supplierPaymentTooltip, setSupplierPaymentTooltip] = useState<SupplierPaymentTooltip | null>(null);
+  const [showSupplierPaymentModal, setShowSupplierPaymentModal] = useState(false);
+  const [supplierPaymentModalError, setSupplierPaymentModalError] = useState<string | null>(null);
+  const [selectedSupplierPayment, setSelectedSupplierPayment] = useState<SupplierPaymentSeriesItem | null>(null);
+  const [selectedSupplierPaymentMetric, setSelectedSupplierPaymentMetric] = useState<SupplierPaymentSelectedMetric>("true");
+  const [savingSupplierProductId, setSavingSupplierProductId] = useState<string | null>(null);
 
   const meses = MONTHS.map((label, index) => ({ valor: index + 1, label }));
 
@@ -293,6 +361,123 @@ export default function DashboardClient() {
     setAgendaSeries(parsed);
     setAgendaLoading(false);
   }, []);
+
+  const loadSupplierPaymentSeries = useCallback(async () => {
+    setSupplierPaymentLoading(true);
+    setSupplierPaymentError(null);
+
+    const { data, error } = await supabase.from("resumo_parcelas_por_fornecedor").select("*");
+
+    if (error) {
+      setSupplierPaymentError(`Erro ao carregar pagamento por fornecedor: ${error.message}`);
+      setSupplierPaymentSeries([]);
+      setSupplierPaymentLoading(false);
+      return;
+    }
+
+    const parsed: SupplierPaymentSeriesItem[] = (data || []).map((row: Record<string, unknown>) => {
+      const codFornecedor = String(
+        row.cod_fornecedor ??
+        row.codigo_fornecedor ??
+        row.fornecedor_codigo ??
+        row.fornecedor_cod ??
+        row.cod ??
+        row.codigo ??
+        ""
+      ).trim();
+      const nomeFornecedor = String(
+        row.nome_fornecedor ?? row.fornecedor_nome ?? row.nome ?? row.fornecedor ?? "Fornecedor sem nome"
+      ).trim();
+
+      return {
+        fornecedorLabel: `${codFornecedor || "-"} - ${nomeFornecedor}`,
+        codFornecedor,
+        nomeFornecedor,
+        soma_valor_entrada_pg_true: toNumber(row.soma_valor_entrada_pg_true),
+        soma_valor_entrada_pg_null_or_false: toNumber(row.soma_valor_entrada_pg_null_or_false),
+        produtosDetalhe: parseSupplierPaymentDetails(row.produtos_detalhe),
+      };
+    });
+
+    parsed.sort((a, b) => {
+      const numA = Number(a.codFornecedor);
+      const numB = Number(b.codFornecedor);
+
+      const aIsNumber = Number.isFinite(numA);
+      const bIsNumber = Number.isFinite(numB);
+
+      if (aIsNumber && bIsNumber) return numA - numB;
+      if (aIsNumber) return -1;
+      if (bIsNumber) return 1;
+
+      return a.codFornecedor.localeCompare(b.codFornecedor, "pt-BR", { numeric: true, sensitivity: "base" });
+    });
+
+    setSupplierPaymentSeries(parsed);
+    setSupplierPaymentLoading(false);
+  }, []);
+
+  const handleOpenSupplierPaymentModal = useCallback((item: SupplierPaymentSeriesItem, metric: SupplierPaymentSelectedMetric) => {
+    setSelectedSupplierPayment(item);
+    setSelectedSupplierPaymentMetric(metric);
+    setSupplierPaymentModalError(null);
+    setShowSupplierPaymentModal(true);
+  }, []);
+
+  const handleChangeSupplierProductField = useCallback((
+    productId: string,
+    field: "pg_fornecedor" | "data_pg_fornecedor",
+    value: boolean | string
+  ) => {
+    setSelectedSupplierPayment((prev) => {
+      if (!prev) return prev;
+
+      const updatedDetails = prev.produtosDetalhe.map((product) =>
+        product.id === productId ? { ...product, [field]: value } : product
+      );
+
+      return {
+        ...prev,
+        produtosDetalhe: updatedDetails,
+      };
+    });
+  }, []);
+
+  const handleSaveSupplierProduct = useCallback(async (product: SupplierPaymentProductDetail) => {
+    setSavingSupplierProductId(product.id);
+    setSupplierPaymentModalError(null);
+
+    const payload = {
+      pg_fornecedor: product.pg_fornecedor,
+      data_pg_fornecedor: product.data_pg_fornecedor || null,
+    };
+
+    const { error } = await supabase.from("produtos").update(payload).eq("id", product.id);
+
+    if (error) {
+      setSupplierPaymentModalError(`Erro ao salvar produto ${product.cod_produto}: ${error.message}`);
+      setSavingSupplierProductId(null);
+      return;
+    }
+
+    setSupplierPaymentSeries((prev) =>
+      prev.map((supplier) => ({
+        ...supplier,
+        produtosDetalhe: supplier.produtosDetalhe.map((item) =>
+          item.id === product.id
+            ? {
+                ...item,
+                pg_fornecedor: product.pg_fornecedor,
+                data_pg_fornecedor: product.data_pg_fornecedor,
+              }
+            : item
+        ),
+      }))
+    );
+
+    await loadSupplierPaymentSeries();
+    setSavingSupplierProductId(null);
+  }, [loadSupplierPaymentSeries]);
 
   const loadAgendaParcelasByDate = useCallback(async (dateKey: string, dateLabel: string) => {
     setSelectedAgendaDateKey(dateKey);
@@ -384,7 +569,8 @@ export default function DashboardClient() {
     });
     setUpdatingParcelaId(null);
     await loadAgendaSeries();
-  }, [loadAgendaSeries]);
+    await loadSupplierPaymentSeries();
+  }, [loadAgendaSeries, loadSupplierPaymentSeries]);
 
   const handleOpenAgendaParcelasModal = useCallback((dateKey: string | null, dateLabel: string) => {
     if (!dateKey) return;
@@ -428,6 +614,10 @@ export default function DashboardClient() {
   useEffect(() => {
     loadAgendaSeries();
   }, [loadAgendaSeries]);
+
+  useEffect(() => {
+    loadSupplierPaymentSeries();
+  }, [loadSupplierPaymentSeries]);
 
   useEffect(() => {
     const openSalesModal = searchParams.get("openSalesModal");
@@ -615,6 +805,98 @@ export default function DashboardClient() {
       bars,
     };
   }, [agendaSeries]);
+
+  const supplierPaymentChartMetrics = useMemo(() => {
+    if (supplierPaymentSeries.length === 0) return null;
+
+    const width = 980;
+    const barHeight = 24;
+    const barGap = 14;
+    const contentHeight = supplierPaymentSeries.length * (barHeight + barGap) - barGap;
+    const height = Math.max(240, contentHeight + 68);
+
+    const padding = { top: 16, right: 20, bottom: 52, left: 300 };
+    const plotWidth = width - padding.left - padding.right;
+
+    const maxX = Math.max(
+      ...supplierPaymentSeries.flatMap((item) => [
+        item.soma_valor_entrada_pg_true,
+        item.soma_valor_entrada_pg_null_or_false,
+      ]),
+      1
+    );
+
+    const xForValue = (value: number) => padding.left + (value / maxX) * plotWidth;
+
+    const xTicks = Array.from({ length: 5 }, (_, i) => {
+      const value = (maxX / 4) * i;
+      return { value, x: xForValue(value) };
+    });
+
+    const bars = supplierPaymentSeries.map((item, index) => {
+      const y = padding.top + index * (barHeight + barGap);
+      return {
+        ...item,
+        y,
+        barHeight,
+        unpaidWidth: Math.max(0, xForValue(item.soma_valor_entrada_pg_null_or_false) - padding.left),
+        paidWidth: Math.max(0, xForValue(item.soma_valor_entrada_pg_true) - padding.left),
+      };
+    });
+
+    return {
+      width,
+      height,
+      padding,
+      xTicks,
+      bars,
+    };
+  }, [supplierPaymentSeries]);
+
+  const supplierPaymentModalGroupedProducts = useMemo(() => {
+    const details = selectedSupplierPayment?.produtosDetalhe || [];
+
+    const sorted = [...details].sort((a, b) =>
+      a.cod_produto.localeCompare(b.cod_produto, "pt-BR", { numeric: true, sensitivity: "base" })
+    );
+
+    const pgTrue = sorted.filter((product) => {
+      if (product.valor_entrada_pg_true > 0) return true;
+      if (product.valor_entrada_pg_null_or_false > 0) return false;
+      return product.pg_fornecedor;
+    });
+
+    const pgNullOrFalse = sorted.filter((product) => {
+      if (product.valor_entrada_pg_null_or_false > 0) return true;
+      if (product.valor_entrada_pg_true > 0) return false;
+      return !product.pg_fornecedor;
+    });
+
+    return { pgTrue, pgNullOrFalse };
+  }, [selectedSupplierPayment]);
+
+  const supplierPaymentModalTotals = useMemo(() => {
+    const calculatedPgTrue = supplierPaymentModalGroupedProducts.pgTrue.reduce(
+      (acc, product) => acc + product.valor_entrada,
+      0
+    );
+    const calculatedPgNullOrFalse = supplierPaymentModalGroupedProducts.pgNullOrFalse.reduce(
+      (acc, product) => acc + product.valor_entrada,
+      0
+    );
+
+    const totalPgTrue =
+      supplierPaymentModalGroupedProducts.pgTrue.length > 0
+        ? calculatedPgTrue
+        : (selectedSupplierPayment?.soma_valor_entrada_pg_true ?? 0);
+
+    const totalPgNullOrFalse =
+      supplierPaymentModalGroupedProducts.pgNullOrFalse.length > 0
+        ? calculatedPgNullOrFalse
+        : (selectedSupplierPayment?.soma_valor_entrada_pg_null_or_false ?? 0);
+
+    return { totalPgTrue, totalPgNullOrFalse };
+  }, [supplierPaymentModalGroupedProducts, selectedSupplierPayment]);
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -873,6 +1155,7 @@ export default function DashboardClient() {
                   setProdutos(data || []);
                 })();
                 loadAgendaSeries();
+                loadSupplierPaymentSeries();
               }} />
             </div>
           </div>
@@ -1003,6 +1286,147 @@ export default function DashboardClient() {
         )}
       </div>
 
+      <div className="rounded-lg border bg-white p-3 sm:p-4 shadow-sm">
+        <h2 className="text-base sm:text-lg font-semibold text-black">Pagamento a Fornecedores</h2>
+        <p className="mt-1 text-xs sm:text-sm text-black">Valores pagos e pendentes por fornecedor</p>
+
+        {supplierPaymentLoading ? (
+          <p className="mt-4 text-xs sm:text-sm text-black">Carregando pagamentos por fornecedor...</p>
+        ) : supplierPaymentError ? (
+          <p className="mt-4 text-xs sm:text-sm text-red-600">{supplierPaymentError}</p>
+        ) : !supplierPaymentChartMetrics ? (
+          <p className="mt-4 text-xs sm:text-sm text-black">Sem dados para exibir.</p>
+        ) : (
+          <>
+            <div className="mt-4 overflow-x-auto relative text-left">
+              {supplierPaymentTooltip && (
+                <div className="absolute right-2 top-2 z-10 rounded-md border bg-white px-3 py-2 shadow-sm">
+                  <p className="text-xs font-semibold text-black">{supplierPaymentTooltip.fornecedorLabel}</p>
+                  <p className="mt-1 inline-flex items-center gap-2 text-xs text-black">
+                    <span className={`h-2.5 w-2.5 rounded-full ${supplierPaymentTooltip.colorClass}`} />
+                    {supplierPaymentTooltip.metricLabel}: {formatCurrency(supplierPaymentTooltip.value)}
+                  </p>
+                </div>
+              )}
+
+              <svg
+                viewBox={`0 0 ${supplierPaymentChartMetrics.width} ${supplierPaymentChartMetrics.height}`}
+                preserveAspectRatio="xMinYMin meet"
+                className="block w-full min-w-245"
+                role="img"
+                aria-label="Gráfico horizontal de colunas sobrepostas por fornecedor com valores pagos e pendentes"
+              >
+                {supplierPaymentChartMetrics.xTicks.map((tick, index) => (
+                  <g key={`supplier-x-tick-${index}`}>
+                    <line
+                      x1={tick.x}
+                      y1={supplierPaymentChartMetrics.padding.top}
+                      x2={tick.x}
+                      y2={supplierPaymentChartMetrics.height - supplierPaymentChartMetrics.padding.bottom}
+                      className="stroke-gray-200"
+                    />
+                    <text
+                      x={tick.x}
+                      y={supplierPaymentChartMetrics.height - 16}
+                      textAnchor="middle"
+                      className="fill-black text-[10px]"
+                    >
+                      {formatCurrency(tick.value)}
+                    </text>
+                  </g>
+                ))}
+
+                {supplierPaymentChartMetrics.bars.map((bar, index) => (
+                  <g key={`supplier-bar-${index}`}>
+                    <text
+                      x={supplierPaymentChartMetrics.padding.left - 10}
+                      y={bar.y + bar.barHeight / 2 + 4}
+                      textAnchor="end"
+                      className="fill-black text-[11px]"
+                    >
+                      {bar.fornecedorLabel}
+                    </text>
+
+                    <rect
+                      x={supplierPaymentChartMetrics.padding.left}
+                      y={bar.y}
+                      width={bar.unpaidWidth}
+                      height={bar.barHeight}
+                      className="fill-orange-400 cursor-pointer"
+                      tabIndex={0}
+                      aria-label={`${bar.fornecedorLabel} - soma_valor_entrada_pg_null_or_false: ${formatCurrency(bar.soma_valor_entrada_pg_null_or_false)}`}
+                      onClick={() => handleOpenSupplierPaymentModal(bar, "null_or_false")}
+                      onMouseEnter={() => setSupplierPaymentTooltip({
+                        fornecedorLabel: bar.fornecedorLabel,
+                        metricLabel: "Valor a Pagar",
+                        value: bar.soma_valor_entrada_pg_null_or_false,
+                        colorClass: "bg-orange-400",
+                      })}
+                      onMouseLeave={() => setSupplierPaymentTooltip(null)}
+                      onFocus={() => setSupplierPaymentTooltip({
+                        fornecedorLabel: bar.fornecedorLabel,
+                        metricLabel: "Valor a Pagar",
+                        value: bar.soma_valor_entrada_pg_null_or_false,
+                        colorClass: "bg-orange-400",
+                      })}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          handleOpenSupplierPaymentModal(bar, "null_or_false");
+                        }
+                      }}
+                      onBlur={() => setSupplierPaymentTooltip(null)}
+                    />
+
+                    <rect
+                      x={supplierPaymentChartMetrics.padding.left}
+                      y={bar.y}
+                      width={bar.paidWidth}
+                      height={bar.barHeight}
+                      className="fill-blue-600 cursor-pointer"
+                      tabIndex={0}
+                      aria-label={`${bar.fornecedorLabel} - soma_valor_entrada_pg_true: ${formatCurrency(bar.soma_valor_entrada_pg_true)}`}
+                      onClick={() => handleOpenSupplierPaymentModal(bar, "true")}
+                      onMouseEnter={() => setSupplierPaymentTooltip({
+                        fornecedorLabel: bar.fornecedorLabel,
+                        metricLabel: "Valor Pago",
+                        value: bar.soma_valor_entrada_pg_true,
+                        colorClass: "bg-blue-600",
+                      })}
+                      onMouseLeave={() => setSupplierPaymentTooltip(null)}
+                      onFocus={() => setSupplierPaymentTooltip({
+                        fornecedorLabel: bar.fornecedorLabel,
+                        metricLabel: "Valor Pago",
+                        value: bar.soma_valor_entrada_pg_true,
+                        colorClass: "bg-blue-600",
+                      })}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          handleOpenSupplierPaymentModal(bar, "true");
+                        }
+                      }}
+                      onBlur={() => setSupplierPaymentTooltip(null)}
+                    />
+                  </g>
+                ))}
+              </svg>
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center gap-3 text-xs sm:text-sm">
+              <span className="inline-flex items-center gap-2 text-black">
+                <span className="h-2.5 w-2.5 rounded-full bg-blue-600" />
+                Valor Pago
+              </span>
+              <span className="inline-flex items-center gap-2 text-black">
+                <span className="h-2.5 w-2.5 rounded-full bg-orange-400" />
+                Valor a Pagar
+              </span>
+            </div>
+          </>
+        )}
+      </div>
+
       {showAgendaParcelasModal && selectedAgendaDateKey && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-2 sm:p-4">
           <div className="w-full max-w-5xl max-h-[90vh] rounded-lg bg-white p-4 sm:p-6 shadow-lg overflow-y-auto">
@@ -1068,6 +1492,156 @@ export default function DashboardClient() {
                 </table>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {showSupplierPaymentModal && selectedSupplierPayment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-2 sm:p-4">
+          <div className="w-full max-w-6xl max-h-[90vh] rounded-lg bg-white p-4 sm:p-6 shadow-lg overflow-y-auto">
+            <div className="mb-4 flex items-center justify-between sticky top-0 bg-white">
+              <h3 className="text-lg sm:text-xl font-semibold text-black">
+                Produtos do fornecedor - {selectedSupplierPayment.fornecedorLabel}
+              </h3>
+              <button
+                onClick={() => setShowSupplierPaymentModal(false)}
+                className="text-black hover:text-gray-700 text-2xl"
+              >
+                ✕
+              </button>
+            </div>
+
+            {supplierPaymentModalError && (
+              <p className="mt-2 text-xs sm:text-sm text-red-600">{supplierPaymentModalError}</p>
+            )}
+
+            <div className="mt-4 grid grid-cols-1 xl:grid-cols-2 gap-4">
+              <div className={`rounded-md border p-3 ${selectedSupplierPaymentMetric === "true" ? "border-blue-300 bg-blue-50" : "border-gray-200 bg-white"}`}>
+                <h4 className="text-sm sm:text-base font-semibold text-black">
+                  Valor pago: 
+                </h4>
+
+                {supplierPaymentModalGroupedProducts.pgTrue.length === 0 ? (
+                  <p className="mt-2 text-xs sm:text-sm text-black">Sem produtos nesta categoria.</p>
+                ) : (
+                  <div className="mt-2 overflow-x-auto">
+                    <table className="min-w-full text-xs sm:text-sm">
+                      <thead>
+                        <tr className="text-left bg-white border-b border-gray-200">
+                          <th className="py-2 px-3 text-black">Cód.</th>
+                          <th className="py-2 px-3 text-black">Produto</th>
+                          <th className="py-2 px-3 text-black">Entrada</th>
+                          <th className="py-2 px-3 text-black">pg_fornecedor</th>
+                          <th className="py-2 px-3 text-black">data_pg_fornecedor</th>
+                          <th className="py-2 px-3 text-black">Ação</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {supplierPaymentModalGroupedProducts.pgTrue.map((product) => (
+                          <tr key={`pg-true-${product.id}`} className="border-b border-gray-100">
+                            <td className="py-2 px-3 text-black">{product.cod_produto}</td>
+                            <td className="py-2 px-3 text-black">{product.produto}</td>
+                            <td className="py-2 px-3 text-black">{formatCurrency(product.valor_entrada)}</td>
+                            <td className="py-2 px-3 text-black">
+                              <input
+                                type="checkbox"
+                                checked={product.pg_fornecedor}
+                                onChange={(e) => handleChangeSupplierProductField(product.id, "pg_fornecedor", e.target.checked)}
+                              />
+                            </td>
+                            <td className="py-2 px-3 text-black">
+                              <input
+                                type="date"
+                                className="rounded-md border px-2 py-1 text-black"
+                                value={product.data_pg_fornecedor}
+                                onChange={(e) => handleChangeSupplierProductField(product.id, "data_pg_fornecedor", e.target.value)}
+                              />
+                            </td>
+                            <td className="py-2 px-3 text-black">
+                              <button
+                                type="button"
+                                disabled={savingSupplierProductId === product.id}
+                                onClick={() => handleSaveSupplierProduct(product)}
+                                className="rounded-md bg-blue-600 px-2 py-1 text-white hover:bg-blue-700 disabled:opacity-60"
+                              >
+                                {savingSupplierProductId === product.id ? "Salvando..." : "Salvar"}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                <p className="mt-2 text-xs sm:text-sm font-semibold text-blue-600">
+                  Total valor de pago: {formatCurrency(supplierPaymentModalTotals.totalPgTrue)}
+                </p>
+              </div>
+
+              <div className={`rounded-md border p-3 ${selectedSupplierPaymentMetric === "null_or_false" ? "border-amber-300 bg-amber-50" : "border-gray-200 bg-white"}`}>
+                <h4 className="text-sm sm:text-base font-semibold text-black">
+                  Valor a pagar:
+                </h4>
+
+                {supplierPaymentModalGroupedProducts.pgNullOrFalse.length === 0 ? (
+                  <p className="mt-2 text-xs sm:text-sm text-black">Sem produtos nesta categoria.</p>
+                ) : (
+                  <div className="mt-2 overflow-x-auto">
+                    <table className="min-w-full text-xs sm:text-sm">
+                      <thead>
+                        <tr className="text-left bg-white border-b border-gray-200">
+                          <th className="py-2 px-3 text-black">Cód.</th>
+                          <th className="py-2 px-3 text-black">Produto</th>
+                          <th className="py-2 px-3 text-black">Entrada</th>
+                          <th className="py-2 px-3 text-black">pg_fornecedor</th>
+                          <th className="py-2 px-3 text-black">data_pg_fornecedor</th>
+                          <th className="py-2 px-3 text-black">Ação</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {supplierPaymentModalGroupedProducts.pgNullOrFalse.map((product) => (
+                          <tr key={`pg-null-false-${product.id}`} className="border-b border-gray-100">
+                            <td className="py-2 px-3 text-black">{product.cod_produto}</td>
+                            <td className="py-2 px-3 text-black">{product.produto}</td>
+                            <td className="py-2 px-3 text-black">{formatCurrency(product.valor_entrada)}</td>
+                            <td className="py-2 px-3 text-black">
+                              <input
+                                type="checkbox"
+                                checked={product.pg_fornecedor}
+                                onChange={(e) => handleChangeSupplierProductField(product.id, "pg_fornecedor", e.target.checked)}
+                              />
+                            </td>
+                            <td className="py-2 px-3 text-black">
+                              <input
+                                type="date"
+                                className="rounded-md border px-2 py-1 text-black"
+                                value={product.data_pg_fornecedor}
+                                onChange={(e) => handleChangeSupplierProductField(product.id, "data_pg_fornecedor", e.target.value)}
+                              />
+                            </td>
+                            <td className="py-2 px-3 text-black">
+                              <button
+                                type="button"
+                                disabled={savingSupplierProductId === product.id}
+                                onClick={() => handleSaveSupplierProduct(product)}
+                                className="rounded-md bg-blue-600 px-2 py-1 text-white hover:bg-blue-700 disabled:opacity-60"
+                              >
+                                {savingSupplierProductId === product.id ? "Salvando..." : "Salvar"}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                <p className="mt-2 text-xs sm:text-sm font-semibold text-red-600">
+                  Total valor a pagar: {formatCurrency(supplierPaymentModalTotals.totalPgNullOrFalse)}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       )}
