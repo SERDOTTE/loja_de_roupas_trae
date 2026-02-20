@@ -1,18 +1,29 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/authContext";
+import { isVendedorEmail, vendedorAllowedPaths } from "@/lib/userRoles";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, loading } = useAuth();
 
   useEffect(() => {
     if (!loading && !user) {
       router.push("/login");
+      return;
     }
-  }, [user, loading, router]);
+
+    if (!loading && user) {
+      const isVendedorUser = isVendedorEmail(user.email);
+
+      if (isVendedorUser && !vendedorAllowedPaths.includes(pathname)) {
+        router.push("/clientes");
+      }
+    }
+  }, [user, loading, router, pathname]);
 
   if (loading) {
     return (

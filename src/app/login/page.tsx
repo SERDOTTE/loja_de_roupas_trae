@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase.server";
+import { isVendedorEmail, VENDEDOR_SALES_PATH } from "@/lib/userRoles";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -35,7 +36,7 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const { error: authError } = await supabase.auth.signInWithPassword({
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -43,7 +44,8 @@ export default function LoginPage() {
       if (authError) {
         setError(authError.message);
       } else {
-        router.push("/");
+        const redirectPath = isVendedorEmail(data.user?.email) ? VENDEDOR_SALES_PATH : "/";
+        router.push(redirectPath);
       }
     } catch (err) {
       setError("Erro ao conectar com o servidor. Tente novamente.");

@@ -3,6 +3,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase.server";
+import { useAuth } from "@/lib/authContext";
+import { isVendedorEmail } from "@/lib/userRoles";
 import { SalesForm } from "./SalesForm";
 import { SalesListModal } from "./SalesListModal";
 
@@ -297,6 +299,8 @@ function sortAgendaParcelas(items: AgendaParcelaItem[]) {
 export default function DashboardClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user } = useAuth();
+  const isVendedorUser = isVendedorEmail(user?.email);
   const [produtos, setProdutos] = useState<any[]>([]);
   const [monthlySeries, setMonthlySeries] = useState<MonthlySeriesItem[]>([]);
   const [chartLoading, setChartLoading] = useState(false);
@@ -900,7 +904,7 @@ export default function DashboardClient() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      
+      {!isVendedorUser && (
       <div className="grid gap-4 sm:gap-6 grid-cols-1 xl:grid-cols-2 items-stretch">
         <div className="rounded-lg border bg-white p-3 sm:p-4 shadow-sm">
         <div className="flex flex-col gap-3 mb-4">
@@ -1119,13 +1123,18 @@ export default function DashboardClient() {
           )}
         </div>
       </div>
+      )}
 
       <div className="rounded-lg border bg-white p-3 sm:p-4 shadow-sm">
         <h2 className="text-base sm:text-lg font-semibold text-black">Ações rápidas</h2>
         <div className="mt-4 flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3">
-          <Link href="/fornecedores" className="inline-flex items-center justify-center rounded-md bg-blue-600 px-3 sm:px-4 py-2 text-xs sm:text-sm text-white hover:bg-blue-700">Cadastrar Fornecedor</Link>
+          {!isVendedorUser && (
+            <Link href="/fornecedores" className="inline-flex items-center justify-center rounded-md bg-blue-600 px-3 sm:px-4 py-2 text-xs sm:text-sm text-white hover:bg-blue-700">Cadastrar Fornecedor</Link>
+          )}
           <Link href="/clientes" className="inline-flex items-center justify-center rounded-md bg-teal-600 px-3 sm:px-4 py-2 text-xs sm:text-sm text-white hover:bg-teal-700">Cadastrar Cliente</Link>
-          <Link href="/produtos" className="inline-flex items-center justify-center rounded-md bg-green-600 px-3 sm:px-4 py-2 text-xs sm:text-sm text-white hover:bg-green-700">Cadastrar Produto</Link>
+          {!isVendedorUser && (
+            <Link href="/produtos" className="inline-flex items-center justify-center rounded-md bg-green-600 px-3 sm:px-4 py-2 text-xs sm:text-sm text-white hover:bg-green-700">Cadastrar Produto</Link>
+          )}
           <button onClick={() => setShowSalesModal(true)} className="inline-flex items-center justify-center rounded-md bg-purple-600 px-3 sm:px-4 py-2 text-xs sm:text-sm text-white hover:bg-purple-700">Cadastrar Venda</button>
         </div>
 
@@ -1162,6 +1171,8 @@ export default function DashboardClient() {
         )}
       </div>
 
+      {!isVendedorUser && (
+      <>
       <div className="rounded-lg border bg-white p-3 sm:p-4 shadow-sm">
         <h2 className="text-base sm:text-lg font-semibold text-black">Agenda de Recebimento</h2>
 
@@ -1647,6 +1658,8 @@ export default function DashboardClient() {
       )}
 
       {showSalesListModal && <SalesListModal onClose={() => setShowSalesListModal(false)} selectedMonth={selectedMonth} selectedYear={selectedYear} />}
+  </>
+      )}
     </div>
   );
 }

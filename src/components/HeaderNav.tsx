@@ -4,11 +4,13 @@ import { useState } from "react";
 import { useAuth } from "@/lib/authContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { isVendedorEmail, VENDEDOR_SALES_PATH } from "@/lib/userRoles";
 
 export function HeaderNav() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const isVendedorUser = isVendedorEmail(user?.email);
 
   const handleLogout = async () => {
     setMobileMenuOpen(false);
@@ -43,11 +45,15 @@ export function HeaderNav() {
       {mobileMenuOpen && (
         <div className="md:hidden fixed top-14 left-0 right-0 z-40 border-b border-gray-200 bg-white shadow-sm">
           <nav className="max-w-6xl mx-auto px-4 py-4 flex flex-col gap-3">
-            <Link href="/" onClick={() => setMobileMenuOpen(false)} className="text-sm text-black hover:text-blue-600">Dashboard</Link>
-            <Link href="/fornecedores" onClick={() => setMobileMenuOpen(false)} className="text-sm text-black hover:text-blue-600">Fornecedores</Link>
             <Link href="/clientes" onClick={() => setMobileMenuOpen(false)} className="text-sm text-black hover:text-blue-600">Clientes</Link>
-            <Link href="/produtos" onClick={() => setMobileMenuOpen(false)} className="text-sm text-black hover:text-blue-600">Produtos</Link>
-            <Link href="/?openSalesModal=1" onClick={() => setMobileMenuOpen(false)} className="text-sm text-black hover:text-blue-600">Cadastrar Venda</Link>
+            <Link href={VENDEDOR_SALES_PATH} onClick={() => setMobileMenuOpen(false)} className="text-sm text-black hover:text-blue-600">Cadastrar Venda</Link>
+            {!isVendedorUser && (
+              <>
+                <Link href="/" onClick={() => setMobileMenuOpen(false)} className="text-sm text-black hover:text-blue-600">Dashboard</Link>
+                <Link href="/fornecedores" onClick={() => setMobileMenuOpen(false)} className="text-sm text-black hover:text-blue-600">Fornecedores</Link>
+                <Link href="/produtos" onClick={() => setMobileMenuOpen(false)} className="text-sm text-black hover:text-blue-600">Produtos</Link>
+              </>
+            )}
 
             <div className="pt-3 border-t border-gray-200 flex flex-col gap-2">
               <span className="text-sm text-black">{user.email}</span>
@@ -67,11 +73,15 @@ export function HeaderNav() {
 
         <nav className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-6">
           <div className="flex flex-col md:flex-row gap-4 md:gap-6">
-            <Link href="/" className="text-sm text-black hover:text-blue-600">Dashboard</Link>
-            <Link href="/fornecedores" className="text-sm text-black hover:text-blue-600">Fornecedores</Link>
             <Link href="/clientes" className="text-sm text-black hover:text-blue-600">Clientes</Link>
-            <Link href="/produtos" className="text-sm text-black hover:text-blue-600">Produtos</Link>
-            <Link href="/?openSalesModal=1" className="text-sm text-black hover:text-blue-600">Cadastrar Venda</Link>
+            <Link href={VENDEDOR_SALES_PATH} className="text-sm text-black hover:text-blue-600">Cadastrar Venda</Link>
+            {!isVendedorUser && (
+              <>
+                <Link href="/" className="text-sm text-black hover:text-blue-600">Dashboard</Link>
+                <Link href="/fornecedores" className="text-sm text-black hover:text-blue-600">Fornecedores</Link>
+                <Link href="/produtos" className="text-sm text-black hover:text-blue-600">Produtos</Link>
+              </>
+            )}
           </div>
 
           <div className="flex flex-col md:flex-row md:items-center gap-3 md:pl-6 md:border-l md:border-gray-300">
