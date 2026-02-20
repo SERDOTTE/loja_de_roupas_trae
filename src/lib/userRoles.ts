@@ -5,4 +5,4 @@ export function isVendedorEmail(email?: string | null) {
   return (email || "").toLowerCase() === VENDEDOR_EMAIL;
 }
 
-export const vendedorAllowedPaths = ["/", "/clientes"] as const;
+export const vendedorAllowedPaths: string[] = ["/", "/clientes"] as const;
